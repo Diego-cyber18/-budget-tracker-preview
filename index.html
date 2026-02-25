@@ -21,7 +21,7 @@
 <body>
   <div id="loading-screen">
     <div class="spinner"></div>
-    <div style="color:#555;font-size:13px;font-family:sans-serif">Caricamento...</div>
+    <div id="loading-msg" style="color:#555;font-size:13px;font-family:sans-serif">Caricamento...</div>
   </div>
   <div id="root"></div>
 
@@ -32,63 +32,83 @@
 
   <script>
   window.addEventListener('load', function() {
-    if (!window.React || !window.ReactDOM) {
-      document.getElementById('loading-screen').innerHTML = '<div style="color:#e74c3c;padding:40px;text-align:center">Errore caricamento.<br>Ricarica la pagina.</div>';
-      return;
-    }
-    const { useState, useEffect } = React;
-
-
-  firebase.initializeApp({
-    apiKey: "AIzaSyBDTMPfdMxsvstKYpvQh_95URYfN5JdzEE",
-    authDomain: "moneypal-89fcf.firebaseapp.com",
-    databaseURL: "https://moneypal-89fcf-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "moneypal-89fcf",
-    storageBucket: "moneypal-89fcf.firebasestorage.app",
-    messagingSenderId: "290834672771",
-    appId: "1:290834672771:web:0e92b118cefea511a1bfb6"
-  });
-  const _db = firebase.database();
-  const _ref = _db.ref('budget/family');
-  const _cache = {};
-
-  Object.defineProperty(window, 'localStorage', {
-    value: {
-      getItem:    (k)    => k in _cache ? _cache[k] : null,
-      setItem:    (k, v) => { _cache[k] = v; _ref.update({[k]: v}).catch(console.error); },
-      removeItem: (k)    => { delete _cache[k]; _ref.child(k).remove().catch(()=>{}); },
-      clear: ()=>{}, key: (i)=>Object.keys(_cache)[i]||null,
-      get length(){ return Object.keys(_cache).length; }
-    },
-    writable: false, configurable: true
-  });
-
-  let _firstLoad = true;
-  _ref.on('value', snap => {
-    const remote = snap.val() || {};
-    if (_firstLoad) { Object.assign(_cache, remote); return; }
-    const changed = Object.keys(remote).some(k => remote[k] !== _cache[k]);
-    if (changed) {
-      Object.assign(_cache, remote);
-      if (!document.getElementById('sync-banner')) {
-        const b = document.createElement('div');
-        b.id = 'sync-banner';
-        b.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#e8c547;color:#0d0d0f;padding:10px 22px;border-radius:20px;font-weight:700;font-size:13px;cursor:pointer;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.5);white-space:nowrap';
-        b.textContent = '🔄 Dati aggiornati — tocca per ricaricare';
-        b.onclick = () => location.reload();
-        document.body.appendChild(b);
-        setTimeout(() => b.remove(), 8000);
+    try {
+      if (!window.React || !window.ReactDOM) {
+        throw new Error('React non caricato');
       }
-    }
-  });
 
+      const { useState, useEffect } = React;
 
-    _ref.once('value')
-      .then(snap => { const d = snap.val(); if(d) Object.assign(_cache, d); })
-      .catch(e => console.warn('Firebase load error:', e))
-      .finally(() => {
-        _firstLoad = false;
-        document.getElementById('loading-screen').style.display = 'none';
+      // ── FIREBASE SYNC ──
+      firebase.initializeApp({
+        apiKey: "AIzaSyBDTMPfdMxsvstKYpvQh_95URYfN5JdzEE",
+        authDomain: "moneypal-89fcf.firebaseapp.com",
+        databaseURL: "https://moneypal-89fcf-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "moneypal-89fcf",
+        storageBucket: "moneypal-89fcf.firebasestorage.app",
+        messagingSenderId: "290834672771",
+        appId: "1:290834672771:web:0e92b118cefea511a1bfb6"
+      });
+
+      const _db = firebase.database();
+      const _ref = _db.ref('budget/family');
+      const _cache = {};
+
+      // Override localStorage con Firebase
+      try {
+        Object.defineProperty(window, 'localStorage', {
+          value: {
+            getItem:    (k) => k in _cache ? _cache[k] : null,
+            setItem:    (k, v) => { _cache[k] = v; _ref.update({[k]: v}).catch(console.error); },
+            removeItem: (k) => { delete _cache[k]; _ref.child(k).remove().catch(()=>{}); },
+            clear: () => {},
+            key: (i) => Object.keys(_cache)[i] || null,
+            get length() { return Object.keys(_cache).length; }
+          },
+          writable: false, configurable: true
+        });
+      } catch(lsErr) {
+        // Fallback: patch methods directly
+        console.warn('defineProperty failed, patching directly:', lsErr);
+        const orig = window.localStorage;
+        orig._getItem = orig.getItem.bind(orig);
+        orig.getItem = (k) => k in _cache ? _cache[k] : null;
+        orig.setItem = (k, v) => { _cache[k] = v; _ref.update({[k]: v}).catch(console.error); };
+        orig.removeItem = (k) => { delete _cache[k]; _ref.child(k).remove().catch(()=>{}); };
+      }
+
+      // Real-time sync banner
+      let _firstLoad = true;
+      _ref.on('value', snap => {
+        const remote = snap.val() || {};
+        if (_firstLoad) { Object.assign(_cache, remote); return; }
+        const changed = Object.keys(remote).some(k => remote[k] !== _cache[k]);
+        if (changed) {
+          Object.assign(_cache, remote);
+          if (!document.getElementById('sync-banner')) {
+            const b = document.createElement('div');
+            b.id = 'sync-banner';
+            b.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#e8c547;color:#0d0d0f;padding:10px 22px;border-radius:20px;font-weight:700;font-size:13px;cursor:pointer;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.5);white-space:nowrap';
+            b.textContent = '🔄 Dati aggiornati — tocca per ricaricare';
+            b.onclick = () => location.reload();
+            document.body.appendChild(b);
+            setTimeout(() => b.remove(), 8000);
+          }
+        }
+      });
+
+      // Carica dati da Firebase, poi avvia app
+      document.getElementById('loading-msg').textContent = 'Connessione...';
+      _ref.once('value')
+        .then(snap => {
+          const d = snap.val();
+          if (d) Object.assign(_cache, d);
+          document.getElementById('loading-msg').textContent = 'Avvio...';
+        })
+        .catch(e => { console.warn('Firebase error:', e); })
+        .finally(() => {
+          _firstLoad = false;
+          document.getElementById('loading-screen').style.display = 'none';
 
 function SimpleBarChart({ data, bars, height = 180 }) {
     if (!data || data.length === 0)
@@ -1791,9 +1811,20 @@ root.render(React.createElement(App));
 document.getElementById('loading').style.display = 'none';
 
 
-        const domRoot = ReactDOM.createRoot(document.getElementById('root'));
-        domRoot.render(React.createElement(App));
-      });
+          try {
+            const domRoot = ReactDOM.createRoot(document.getElementById('root'));
+            domRoot.render(React.createElement(App));
+          } catch(renderErr) {
+            console.error('Render error:', renderErr);
+            document.getElementById('root').innerHTML = '<div style="color:#e74c3c;padding:40px;text-align:center;font-family:sans-serif">Errore: ' + renderErr.message + '</div>';
+            document.getElementById('loading-screen').style.display = 'none';
+          }
+        });
+
+    } catch(err) {
+      console.error('Init error:', err);
+      document.getElementById('loading-screen').innerHTML = '<div style="color:#e74c3c;padding:40px;text-align:center;font-family:sans-serif">Errore: ' + err.message + '<br><br><button onclick="location.reload()" style="background:#e8c547;color:#000;border:none;padding:10px 20px;border-radius:8px;cursor:pointer">Ricarica</button></div>';
+    }
   });
   </script>
 </body>
