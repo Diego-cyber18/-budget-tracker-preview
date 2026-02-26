@@ -828,6 +828,510 @@ const today = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
+
+
+function useIsMobile() {
+    const [m, setM] = (0, React.useState)(typeof window !== 'undefined' ? window.innerWidth < 768 : true);
+    (0, React.useEffect)(() => {
+        const fn = () => setM(window.innerWidth < 768);
+        window.addEventListener('resize', fn);
+        return () => window.removeEventListener('resize', fn);
+    }, []);
+    return m;
+}
+function SimpleBarChart({ data, bars, height = 180, showValues = false }) {
+    const [tooltip, setTooltip] = React.useState(null);
+    if (!data || data.length === 0)
+        return null;
+    const maxVal = Math.max(1, ...data.flatMap(d => bars.map(b => Math.abs(d[b.dataKey] || 0))));
+    const fmt2 = v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : String(Math.round(v));
+    const fmtFull = v => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v || 0);
+    const gridLines = [maxVal, maxVal * 0.75, maxVal * 0.5, maxVal * 0.25, 0];
+    return (React.createElement("div", { style: { width: '100%', position: 'relative' } },
+        tooltip && (React.createElement("div", { style: { position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: '#1a1a26', border: '1px solid #2a2a38', borderRadius: 8, padding: '8px 14px', zIndex: 10, pointerEvents: 'none', whiteSpace: 'nowrap' } },
+            React.createElement("div", { style: { fontSize: 11, color: '#e8c547', fontWeight: 700, marginBottom: 4 } }, tooltip.name),
+            tooltip.items.map((item, i) => (React.createElement("div", { key: i, style: { fontSize: 11, color: item.color, marginBottom: 2 } },
+                item.label,
+                ": ",
+                fmtFull(item.val)))))),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'flex-end', gap: 4, height: height, paddingLeft: 44, paddingRight: 8, position: 'relative' } },
+            gridLines.slice(0, -1).map((v, i) => (React.createElement("div", { key: i, style: { position: 'absolute', left: 44, right: 8, bottom: 22 + ((v / maxVal) * (height - 22)), borderTop: '1px dashed #1e1e28', pointerEvents: 'none' } },
+                React.createElement("span", { style: { position: 'absolute', left: -42, top: -8, fontSize: 9, color: '#444' } }, fmt2(v))))),
+            data.map((d, di) => (React.createElement("div", { key: di, style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: bars.length > 1 ? bars.length * 10 + 4 : 12 }, onMouseEnter: () => setTooltip({ name: d.name, items: bars.map(b => ({ label: b.name, val: d[b.dataKey] || 0, color: b.fill })) }), onMouseLeave: () => setTooltip(null) },
+                React.createElement("div", { style: { width: '100%', display: 'flex', gap: 2, alignItems: 'flex-end', height: height - 22 } }, bars.map((b, bi) => {
+                    const val = d[b.dataKey] || 0;
+                    const pct = maxVal > 0 ? (Math.abs(val) / maxVal) * 100 : 0;
+                    return (React.createElement("div", { key: bi, style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' } },
+                        showValues && val > 0 && React.createElement("div", { style: { fontSize: 8, color: b.fill, marginBottom: 2, fontWeight: 700 } }, fmt2(val)),
+                        React.createElement("div", { style: { width: '100%', height: pct + '%', background: b.fill, borderRadius: '3px 3px 0 0', minHeight: val > 0 ? 3 : 0, transition: 'opacity 0.15s', opacity: tooltip && tooltip.name !== d.name ? 0.5 : 1 } })));
+                })),
+                React.createElement("div", { style: { fontSize: 9, color: '#666', marginTop: 3, textAlign: 'center', letterSpacing: 0.3 } }, d.name))))),
+        bars.length > 1 && React.createElement("div", { style: { display: 'flex', gap: 14, justifyContent: 'center', marginTop: 10, flexWrap: 'wrap' } }, bars.map((b, i) => (React.createElement("div", { key: i, style: { display: 'flex', alignItems: 'center', gap: 5 } },
+            React.createElement("div", { style: { width: 12, height: 12, background: b.fill, borderRadius: 3 } }),
+            React.createElement("span", { style: { fontSize: 11, color: '#888' } }, b.name)))))));
+}
+const TRANSLATIONS = {
+    it: {
+        months: ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"],
+        days: ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"],
+        appSubtitle: "Budget Familiare",
+        // Main tabs
+        tabEntrate: "Entrate", tabBudget: "Budget", tabSpese: "Spese", tabCasa: "Casa",
+        // Sub tabs
+        subPlan: "Plan", subDaily: "Daily", subOverview: "Grafici",
+        subUscite: "Uscite", subStorico: "Storico",
+        subBollette: "Bollette", subGrafici: "Grafici", subPellet: "Pellet",
+        // Settings
+        settingsTitle: "Impostazioni", settingsPerson1: "Persona 1", settingsPerson2: "Persona 2",
+        settingsSave: "Salva modifiche", settingsStart: "Inizia →", settingsCancel: "Annulla",
+        settingsLang: "Lingua",
+        settingsOnboardingTitle: "Inserisci i nomi delle due persone per iniziare",
+        // Export/Import
+        exportImportTitle: "Esporta / Importa", exportTitle: "Esporta dati",
+        exportDesc: "Copia il testo qui sotto e salvalo. Incollalo nella sezione Importa su un altro dispositivo.",
+        exportCopy: "📋 Copia negli appunti",
+        importTitle: "Importa dati",
+        importDesc: "Incolla qui il testo esportato da un altro dispositivo.",
+        importWarning: "I dati attuali verranno sovrascritti.",
+        importBtn: "Importa e sostituisci",
+        importOk: "✅ Dati importati con successo!",
+        importErr: "❌ Formato non valido. Assicurati di incollare il testo completo.",
+        // Entrate
+        contribution: "Contributo famiglia", familyTotal: "Totale famiglia",
+        // Plan
+        planWarning: "Inserisci gli stipendi in Entrate per il calcolo automatico",
+        copyFromPrev: "Copia Plan da", overwrite: "(sovrascrive)",
+        copyConfirm: "Sovrascrivere", copyWith: "con i valori di",
+        copyYes: "Sì, copia", addItem: "+ Aggiungi voce",
+        planSummary: "Riepilogo", grandTotal: "Totale Plan",
+        // Daily
+        dailyBudget: "Budget Mensile", remaining: "Rimanente",
+        initialAvg: "Media/Giorno iniziale",
+        updatedAvg: "Media/Giorno oggi", daysLeft: "giorni rimasti",
+        budgetUse: "Utilizzo budget", todayMarker: "oggi",
+        noPlanData: "Inserisci i valori nel Plan → Revolut Cointestato per attivare il Daily Budget",
+        // Uscite
+        newExpense: "+ Nuova Spesa", editExpense: "✏️ Modifica Spesa",
+        saveExpense: "Salva Spesa", saveChanges: "💾 Salva Modifiche",
+        category: "Categoria", merchant: "Esercente / Descrizione",
+        merchantPlaceholder: "es. Esselunga, Zara...", date: "Data", amount: "Importo",
+        noExpenses: "Nessuna spesa questo mese", noFilter: "Nessuna spesa con questo filtro",
+        allCategories: "Tutte le categorie", byCategory: "Per Categoria",
+        totalMonth: "Totale", numExpenses: "spese",
+        sortDateDesc: "Data ↓", sortDateAsc: "Data ↑", sortAmountDesc: "Importo ↓", sortByCat: "Categoria",
+        // Storico
+        storicoTitle: "Storico Entrate", noData: "Nessun dato ancora",
+        // Bollette
+        bolletteTitle: "Bollette", yearSummary: "Riepilogo Annuale",
+        monthlyDetail: "Dettaglio Mensile — tocca un campo per modificarlo",
+        netLuce: "Luce netta", pannelliCredit: "PANNELLI (credito)", luceSpesa: "LUCE (spesa)",
+        delete: "Elimina", note: "NOTE",
+        // Grafici
+        graficiTitle: "Grafici Bollette", monthlyTrend: "Andamento Mensile", yearlyTotals: "Totale per Anno",
+        luceNetta: "Luce Netta (Luce − Pannelli)", gasePellet: "Gas e Pellet", gasePelletAnno: "Gas e Pellet per Anno",
+        luceAnno: "Luce per Anno", acquaAnno: "Acqua per Anno",
+        noGraficiData: "Inserisci dati nelle Bollette per vedere i grafici",
+        // Pellet
+        pelletTitle: "Tracker Pellet 🪵", currentStatus: "Situazione attuale",
+        bagsLeft: "sacchi rimasti", avgPerDay: "Media/giorno", bags: "sacchi",
+        totalBought: "Totale comprati", addRow: "➕ Nuova riga", editRow: "✏️ Modifica riga",
+        bought: "🛒 Comprati", consumed: "🔥 Consumati", add: "Aggiungi",
+        daysRemain: "giorni", finishOn: "finiscono il", noTracking: "Aggiungi la prima riga per iniziare il tracking",
+        // Overview
+        overviewTitle: "Grafici", monthlyPlan: "Piano Mensile", familyMonthly: "Totale Famiglia — Ultimi mesi",
+        essential: "Essential", extra: "Extra", saving: "Saving",
+        // Categories
+        catSpesa: "Spesa", catMangiare: "Mangiare Fuori", catProgrammati: "Programmati",
+        catShopping: "Shopping", catVarie: "Varie", catDivertimento: "Divertimento",
+        catSalute: "Salute", catTrasporti: "Trasporti", catServizi: "Servizi",
+        // Sections
+        sectionComune: "COMUNE", sectionPersonale: "PERSONALE", sectionRisparmi: "RISPARMI",
+        autoSplit: "split auto %", manualSplit: "manuali",
+        revolut: "Revolut Cointestato", spent: "Speso", perDay: "€/giorno", dayLabel: "giorno", monthlyPlanLabel: "Piano Mensile", familyMonthlyLabel: "Totale Famiglia — Ultimi mesi",
+        // Casa nuove sezioni
+        subLavori: "Lavori", subOverviewCasa: "Casa", subMutuo: "Mutuo",
+        lavoriTitle: "Lavori, Acquisti & Servizi",
+        catLavori: "Lavori", catAcquisti: "Acquisti", catServiziCasa: "Servizi Casa",
+        addLavoro: "+ Aggiungi voce", editLavoro: "✏️ Modifica voce",
+        fornitore: "Fornitore", prodotto: "Prodotto / Descrizione",
+        preventivo: "Preventivo / Saldo", iva: "IVA %",
+        pagatoDiego: "Pagato Diego", pagatoCarmen: "Pagato Carmen",
+        pagatoCoint: "Pagato D&C", daPagareDiego: "Da Pagare Diego",
+        daPagareCarmen: "Da Pagare Carmen", daPagareCoint: "Da Pagare D&C",
+        overviewCasaTitle: "Overview Casa",
+        valoreVendita: "Valore di Vendita Stimato", mutuoRimanente: "Mutuo da Ripagare",
+        totaleInvestito: "Totale Investito", rimanenteNoi: "Rimanente a Noi",
+        aTesta: "A Testa", contributoPerc: "Contributo %",
+        mutuoTitle: "Tracker Mutuo",
+        mutuoStart: "Mese inizio mutuo", importoPagato: "Importo Pagato",
+        totalePagatoMutuo: "Totale Pagato", mutuoMensile: "Rata mensile",
+    },
+    en: {
+        months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+        days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        appSubtitle: "Family Budget",
+        tabEntrate: "Income", tabBudget: "Budget", tabSpese: "Expenses", tabCasa: "Home",
+        subPlan: "Plan", subDaily: "Daily", subOverview: "Grafici",
+        subUscite: "Expenses", subStorico: "History",
+        subBollette: "Bills", subGrafici: "Charts", subPellet: "Pellet",
+        settingsTitle: "Settings", settingsPerson1: "Person 1", settingsPerson2: "Person 2",
+        settingsSave: "Save changes", settingsStart: "Start →", settingsCancel: "Cancel",
+        settingsLang: "Language",
+        settingsOnboardingTitle: "Enter the names of the two people to get started",
+        exportImportTitle: "Export / Import", exportTitle: "Export data",
+        exportDesc: "Copy the text below and save it. Paste it in the Import section on another device.",
+        exportCopy: "📋 Copy to clipboard",
+        importTitle: "Import data",
+        importDesc: "Paste here the text exported from another device.",
+        importWarning: "Current data will be overwritten.",
+        importBtn: "Import and replace",
+        importOk: "✅ Data imported successfully!",
+        importErr: "❌ Invalid format. Make sure you paste the full text.",
+        contribution: "Family contribution", familyTotal: "Family total",
+        planWarning: "Enter salaries in Income for automatic calculation",
+        copyFromPrev: "Copy Plan from", overwrite: "(overwrites)",
+        copyConfirm: "Overwrite", copyWith: "with values from",
+        copyYes: "Yes, copy", addItem: "+ Add item",
+        planSummary: "Summary", grandTotal: "Total Plan",
+        dailyBudget: "Monthly Budget", remaining: "Remaining",
+        initialAvg: "Initial avg/day",
+        updatedAvg: "Today's avg/day", daysLeft: "days left",
+        budgetUse: "Budget usage", todayMarker: "today",
+        noPlanData: "Enter values in Plan → Revolut Cointestato to activate Daily Budget",
+        newExpense: "+ New Expense", editExpense: "✏️ Edit Expense",
+        saveExpense: "Save Expense", saveChanges: "💾 Save Changes",
+        category: "Category", merchant: "Merchant / Description",
+        merchantPlaceholder: "e.g. Amazon, Zara...", date: "Date", amount: "Amount",
+        noExpenses: "No expenses this month", noFilter: "No expenses with this filter",
+        allCategories: "All categories", byCategory: "By Category",
+        totalMonth: "Total", numExpenses: "expenses",
+        sortDateDesc: "Date ↓", sortDateAsc: "Date ↑", sortAmountDesc: "Amount ↓", sortByCat: "Category",
+        storicoTitle: "Income History", noData: "No data yet",
+        bolletteTitle: "Bills", yearSummary: "Yearly Summary",
+        monthlyDetail: "Monthly Detail — tap a field to edit",
+        netLuce: "Net electricity", pannelliCredit: "SOLAR PANELS (credit)", luceSpesa: "ELECTRICITY (expense)",
+        delete: "Delete", note: "NOTES",
+        graficiTitle: "Bill Charts", monthlyTrend: "Monthly Trend", yearlyTotals: "Yearly Totals",
+        luceNetta: "Net Electricity (Elec − Solar)", gasePellet: "Gas & Pellet", gasePelletAnno: "Gas & Pellet per Year",
+        luceAnno: "Electricity per Year", acquaAnno: "Water per Year",
+        noGraficiData: "Enter bill data to see charts",
+        pelletTitle: "Pellet Tracker 🪵", currentStatus: "Current status",
+        bagsLeft: "bags remaining", avgPerDay: "Avg/day", bags: "bags",
+        totalBought: "Total bought", addRow: "➕ New row", editRow: "✏️ Edit row",
+        bought: "🛒 Bought", consumed: "🔥 Consumed", add: "Add",
+        daysRemain: "days", finishOn: "run out on", noTracking: "Add first row to start tracking",
+        overviewTitle: "Grafici", monthlyPlan: "Monthly Plan", familyMonthly: "Family Total — Last months",
+        essential: "Essential", extra: "Extra", saving: "Saving",
+        catSpesa: "Groceries", catMangiare: "Eating Out", catProgrammati: "Scheduled",
+        catShopping: "Shopping", catVarie: "Misc", catDivertimento: "Entertainment",
+        catSalute: "Health", catTrasporti: "Transport", catServizi: "Services",
+        sectionComune: "SHARED", sectionPersonale: "PERSONAL", sectionRisparmi: "SAVINGS",
+        autoSplit: "auto split %", manualSplit: "manual",
+        revolut: "Joint Revolut", spent: "Spent", perDay: "€/day", dayLabel: "day", monthlyPlanLabel: "Monthly Plan", familyMonthlyLabel: "Family Total — Last months",
+        subLavori: "Works", subOverviewCasa: "Home", subMutuo: "Mortgage",
+        lavoriTitle: "Works, Purchases & Services",
+        catLavori: "Works", catAcquisti: "Purchases", catServiziCasa: "Home Services",
+        addLavoro: "+ Add entry", editLavoro: "✏️ Edit entry",
+        fornitore: "Supplier", prodotto: "Product / Description",
+        preventivo: "Quote / Balance", iva: "VAT %",
+        pagatoDiego: "Paid Diego", pagatoCarmen: "Paid Carmen",
+        pagatoCoint: "Paid D&C", daPagareDiego: "To Pay Diego",
+        daPagareCarmen: "To Pay Carmen", daPagareCoint: "To Pay D&C",
+        overviewCasaTitle: "Home Overview",
+        valoreVendita: "Estimated Sale Value", mutuoRimanente: "Mortgage Remaining",
+        totaleInvestito: "Total Invested", rimanenteNoi: "Remaining for Us",
+        aTesta: "Each", contributoPerc: "Contribution %",
+        mutuoTitle: "Mortgage Tracker",
+        mutuoStart: "Mortgage start month", importoPagato: "Amount Paid",
+        totalePagatoMutuo: "Total Paid", mutuoMensile: "Monthly payment",
+    },
+    es: {
+        months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+        days: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+        appSubtitle: "Presupuesto Familiar",
+        tabEntrate: "Ingresos", tabBudget: "Presupuesto", tabSpese: "Gastos", tabCasa: "Casa",
+        subPlan: "Plan", subDaily: "Diario", subOverview: "Grafici",
+        subUscite: "Gastos", subStorico: "Historial",
+        subBollette: "Facturas", subGrafici: "Gráficos", subPellet: "Pellet",
+        settingsTitle: "Ajustes", settingsPerson1: "Persona 1", settingsPerson2: "Persona 2",
+        settingsSave: "Guardar cambios", settingsStart: "Empezar →", settingsCancel: "Cancelar",
+        settingsLang: "Idioma",
+        settingsOnboardingTitle: "Introduce los nombres de las dos personas para empezar",
+        exportImportTitle: "Exportar / Importar", exportTitle: "Exportar datos",
+        exportDesc: "Copia el texto y guárdalo. Pégalo en Importar en otro dispositivo.",
+        exportCopy: "📋 Copiar al portapapeles",
+        importTitle: "Importar datos",
+        importDesc: "Pega aquí el texto exportado desde otro dispositivo.",
+        importWarning: "Los datos actuales serán sobreescritos.",
+        importBtn: "Importar y reemplazar",
+        importOk: "✅ ¡Datos importados con éxito!",
+        importErr: "❌ Formato no válido. Asegúrate de pegar el texto completo.",
+        contribution: "Contribución familiar", familyTotal: "Total familiar",
+        planWarning: "Introduce los sueldos en Ingresos para el cálculo automático",
+        copyFromPrev: "Copiar Plan de", overwrite: "(sobreescribe)",
+        copyConfirm: "¿Sobreescribir", copyWith: "con los valores de",
+        copyYes: "Sí, copiar", addItem: "+ Añadir elemento",
+        planSummary: "Resumen", grandTotal: "Total Plan",
+        dailyBudget: "Presupuesto Mensual", remaining: "Restante",
+        initialAvg: "Media/día inicial",
+        updatedAvg: "Media/día hoy", daysLeft: "días restantes",
+        budgetUse: "Uso del presupuesto", todayMarker: "hoy",
+        noPlanData: "Introduce valores en Plan → Revolut Cointestato para activar el Diario",
+        newExpense: "+ Nuevo Gasto", editExpense: "✏️ Editar Gasto",
+        saveExpense: "Guardar Gasto", saveChanges: "💾 Guardar Cambios",
+        category: "Categoría", merchant: "Comercio / Descripción",
+        merchantPlaceholder: "ej. Mercadona, Zara...", date: "Fecha", amount: "Importe",
+        noExpenses: "Sin gastos este mes", noFilter: "Sin gastos con este filtro",
+        allCategories: "Todas las categorías", byCategory: "Por Categoría",
+        totalMonth: "Total", numExpenses: "gastos",
+        sortDateDesc: "Fecha ↓", sortDateAsc: "Fecha ↑", sortAmountDesc: "Importe ↓", sortByCat: "Categoría",
+        storicoTitle: "Historial de Ingresos", noData: "Sin datos todavía",
+        bolletteTitle: "Facturas", yearSummary: "Resumen Anual",
+        monthlyDetail: "Detalle Mensual — toca un campo para editar",
+        netLuce: "Electricidad neta", pannelliCredit: "PANELES SOLARES (crédito)", luceSpesa: "ELECTRICIDAD (gasto)",
+        delete: "Eliminar", note: "NOTAS",
+        graficiTitle: "Gráficos Facturas", monthlyTrend: "Tendencia Mensual", yearlyTotals: "Totales Anuales",
+        luceNetta: "Electricidad neta (Elec − Solar)", gasePellet: "Gas y Pellet", gasePelletAnno: "Gas y Pellet por Año",
+        luceAnno: "Electricidad por Año", acquaAnno: "Agua por Año",
+        noGraficiData: "Introduce datos en Facturas para ver los gráficos",
+        pelletTitle: "Tracker Pellet 🪵", currentStatus: "Situación actual",
+        bagsLeft: "sacos restantes", avgPerDay: "Media/día", bags: "sacos",
+        totalBought: "Total comprado", addRow: "➕ Nueva fila", editRow: "✏️ Editar fila",
+        bought: "🛒 Comprados", consumed: "🔥 Consumidos", add: "Añadir",
+        daysRemain: "días", finishOn: "se acaban el", noTracking: "Añade la primera fila para empezar",
+        overviewTitle: "Grafici", monthlyPlan: "Plan Mensual", familyMonthly: "Total Familiar — Últimos meses",
+        essential: "Esencial", extra: "Extra", saving: "Ahorro",
+        catSpesa: "Compras", catMangiare: "Comer Fuera", catProgrammati: "Programados",
+        catShopping: "Compras", catVarie: "Varios", catDivertimento: "Entretenimiento",
+        catSalute: "Salud", catTrasporti: "Transporte", catServizi: "Servicios",
+        sectionComune: "COMÚN", sectionPersonale: "PERSONAL", sectionRisparmi: "AHORROS",
+        autoSplit: "reparto auto %", manualSplit: "manual",
+        revolut: "Revolut Conjunto", spent: "Gastado", perDay: "€/día", dayLabel: "día", monthlyPlanLabel: "Plan Mensual", familyMonthlyLabel: "Total Familiar — Últimos meses",
+    },
+    de: {
+        months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
+        days: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+        appSubtitle: "Familienbudget",
+        tabEntrate: "Einnahmen", tabBudget: "Budget", tabSpese: "Ausgaben", tabCasa: "Haus",
+        subPlan: "Plan", subDaily: "Täglich", subOverview: "Grafici",
+        subUscite: "Ausgaben", subStorico: "Verlauf",
+        subBollette: "Rechnungen", subGrafici: "Diagramme", subPellet: "Pellet",
+        settingsTitle: "Einstellungen", settingsPerson1: "Person 1", settingsPerson2: "Person 2",
+        settingsSave: "Änderungen speichern", settingsStart: "Starten →", settingsCancel: "Abbrechen",
+        settingsLang: "Sprache",
+        settingsOnboardingTitle: "Namen der zwei Personen eingeben um zu starten",
+        exportImportTitle: "Exportieren / Importieren", exportTitle: "Daten exportieren",
+        exportDesc: "Kopiere den Text und speichere ihn. Füge ihn auf einem anderen Gerät ein.",
+        exportCopy: "📋 In Zwischenablage kopieren",
+        importTitle: "Daten importieren",
+        importDesc: "Füge hier den exportierten Text von einem anderen Gerät ein.",
+        importWarning: "Aktuelle Daten werden überschrieben.",
+        importBtn: "Importieren und ersetzen",
+        importOk: "✅ Daten erfolgreich importiert!",
+        importErr: "❌ Ungültiges Format. Stelle sicher, dass du den vollständigen Text einfügst.",
+        contribution: "Familienbeitrag", familyTotal: "Familien-Gesamt",
+        planWarning: "Gehälter in Einnahmen eingeben für automatische Berechnung",
+        copyFromPrev: "Plan kopieren von", overwrite: "(überschreibt)",
+        copyConfirm: "Überschreiben", copyWith: "mit Werten von",
+        copyYes: "Ja, kopieren", addItem: "+ Eintrag hinzufügen",
+        planSummary: "Zusammenfassung", grandTotal: "Plan Gesamt",
+        dailyBudget: "Monatsbudget", remaining: "Verbleibend",
+        initialAvg: "Ø/Tag (initial)",
+        updatedAvg: "Ø/Tag (heute)", daysLeft: "Tage verbleibend",
+        budgetUse: "Budgetnutzung", todayMarker: "heute",
+        noPlanData: "Werte im Plan eingeben um das Tagesbudget zu aktivieren",
+        newExpense: "+ Neue Ausgabe", editExpense: "✏️ Ausgabe bearbeiten",
+        saveExpense: "Ausgabe speichern", saveChanges: "💾 Änderungen speichern",
+        category: "Kategorie", merchant: "Händler / Beschreibung",
+        merchantPlaceholder: "z.B. Lidl, Zara...", date: "Datum", amount: "Betrag",
+        noExpenses: "Keine Ausgaben diesen Monat", noFilter: "Keine Ausgaben mit diesem Filter",
+        allCategories: "Alle Kategorien", byCategory: "Nach Kategorie",
+        totalMonth: "Gesamt", numExpenses: "Ausgaben",
+        sortDateDesc: "Datum ↓", sortDateAsc: "Datum ↑", sortAmountDesc: "Betrag ↓", sortByCat: "Kategorie",
+        storicoTitle: "Einnahmenverlauf", noData: "Noch keine Daten",
+        bolletteTitle: "Rechnungen", yearSummary: "Jahreszusammenfassung",
+        monthlyDetail: "Monatsdetail — Feld antippen zum Bearbeiten",
+        netLuce: "Netto-Strom", pannelliCredit: "SOLARANLAGE (Gutschrift)", luceSpesa: "STROM (Ausgabe)",
+        delete: "Löschen", note: "NOTIZEN",
+        graficiTitle: "Rechnungsdiagramme", monthlyTrend: "Monatlicher Trend", yearlyTotals: "Jahreszahlen",
+        luceNetta: "Netto-Strom (Strom − Solar)", gasePellet: "Gas & Pellet", gasePelletAnno: "Gas & Pellet pro Jahr",
+        luceAnno: "Strom pro Jahr", acquaAnno: "Wasser pro Jahr",
+        noGraficiData: "Rechnungsdaten eingeben um Diagramme zu sehen",
+        pelletTitle: "Pellet-Tracker 🪵", currentStatus: "Aktuelle Lage",
+        bagsLeft: "Säcke verbleibend", avgPerDay: "Ø/Tag", bags: "Säcke",
+        totalBought: "Gesamt gekauft", addRow: "➕ Neue Zeile", editRow: "✏️ Zeile bearbeiten",
+        bought: "🛒 Gekauft", consumed: "🔥 Verbraucht", add: "Hinzufügen",
+        daysRemain: "Tage", finishOn: "gehen aus am", noTracking: "Erste Zeile hinzufügen um zu starten",
+        overviewTitle: "Grafici", monthlyPlan: "Monatsplan", familyMonthly: "Familie Gesamt — Letzte Monate",
+        essential: "Wesentlich", extra: "Extra", saving: "Ersparnisse",
+        catSpesa: "Einkauf", catMangiare: "Essen gehen", catProgrammati: "Geplant",
+        catShopping: "Shopping", catVarie: "Sonstiges", catDivertimento: "Unterhaltung",
+        catSalute: "Gesundheit", catTrasporti: "Transport", catServizi: "Dienste",
+        sectionComune: "GEMEINSAM", sectionPersonale: "PERSÖNLICH", sectionRisparmi: "ERSPARNISSE",
+        autoSplit: "auto Aufteilung %", manualSplit: "manuell",
+        revolut: "Gemeinsames Revolut", spent: "Ausgegeben", perDay: "€/Tag", dayLabel: "Tag", monthlyPlanLabel: "Monatsplan", familyMonthlyLabel: "Familie Gesamt — Letzte Monate",
+    },
+    fr: {
+        months: ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"],
+        days: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"],
+        appSubtitle: "Budget Familial",
+        tabEntrate: "Revenus", tabBudget: "Budget", tabSpese: "Dépenses", tabCasa: "Maison",
+        subPlan: "Plan", subDaily: "Quotidien", subOverview: "Grafici",
+        subUscite: "Dépenses", subStorico: "Historique",
+        subBollette: "Factures", subGrafici: "Graphiques", subPellet: "Pellet",
+        settingsTitle: "Paramètres", settingsPerson1: "Personne 1", settingsPerson2: "Personne 2",
+        settingsSave: "Enregistrer", settingsStart: "Commencer →", settingsCancel: "Annuler",
+        settingsLang: "Langue",
+        settingsOnboardingTitle: "Entrez les noms des deux personnes pour commencer",
+        exportImportTitle: "Exporter / Importer", exportTitle: "Exporter les données",
+        exportDesc: "Copiez le texte ci-dessous. Collez-le dans Importer sur un autre appareil.",
+        exportCopy: "📋 Copier dans le presse-papiers",
+        importTitle: "Importer les données",
+        importDesc: "Collez ici le texte exporté depuis un autre appareil.",
+        importWarning: "Les données actuelles seront écrasées.",
+        importBtn: "Importer et remplacer",
+        importOk: "✅ Données importées avec succès !",
+        importErr: "❌ Format invalide. Assurez-vous de coller le texte complet.",
+        contribution: "Contribution familiale", familyTotal: "Total familial",
+        planWarning: "Entrez les salaires dans Revenus pour le calcul automatique",
+        copyFromPrev: "Copier le Plan de", overwrite: "(écrase)",
+        copyConfirm: "Écraser", copyWith: "avec les valeurs de",
+        copyYes: "Oui, copier", addItem: "+ Ajouter un élément",
+        planSummary: "Récapitulatif", grandTotal: "Total Plan",
+        dailyBudget: "Budget Mensuel", remaining: "Restant",
+        initialAvg: "Moy/jour initial",
+        updatedAvg: "Moy/jour aujourd'hui", daysLeft: "jours restants",
+        budgetUse: "Utilisation budget", todayMarker: "aujourd'hui",
+        noPlanData: "Entrez des valeurs dans Plan → Revolut Cointestato pour activer le Budget Quotidien",
+        newExpense: "+ Nouvelle Dépense", editExpense: "✏️ Modifier Dépense",
+        saveExpense: "Enregistrer", saveChanges: "💾 Enregistrer",
+        category: "Catégorie", merchant: "Commerçant / Description",
+        merchantPlaceholder: "ex. Carrefour, Zara...", date: "Date", amount: "Montant",
+        noExpenses: "Aucune dépense ce mois", noFilter: "Aucune dépense avec ce filtre",
+        allCategories: "Toutes les catégories", byCategory: "Par Catégorie",
+        totalMonth: "Total", numExpenses: "dépenses",
+        sortDateDesc: "Date ↓", sortDateAsc: "Date ↑", sortAmountDesc: "Montant ↓", sortByCat: "Catégorie",
+        storicoTitle: "Historique des Revenus", noData: "Pas encore de données",
+        bolletteTitle: "Factures", yearSummary: "Récapitulatif Annuel",
+        monthlyDetail: "Détail Mensuel — touchez un champ pour modifier",
+        netLuce: "Électricité nette", pannelliCredit: "PANNEAUX SOLAIRES (crédit)", luceSpesa: "ÉLECTRICITÉ (dépense)",
+        delete: "Supprimer", note: "NOTES",
+        graficiTitle: "Graphiques Factures", monthlyTrend: "Tendance Mensuelle", yearlyTotals: "Totaux Annuels",
+        luceNetta: "Électricité nette (Élec − Solaire)", gasePellet: "Gaz & Pellet", gasePelletAnno: "Gaz & Pellet par An",
+        luceAnno: "Électricité par An", acquaAnno: "Eau par An",
+        noGraficiData: "Entrez des données dans Factures pour voir les graphiques",
+        pelletTitle: "Tracker Pellet 🪵", currentStatus: "Situation actuelle",
+        bagsLeft: "sacs restants", avgPerDay: "Moy/jour", bags: "sacs",
+        totalBought: "Total acheté", addRow: "➕ Nouvelle ligne", editRow: "✏️ Modifier ligne",
+        bought: "🛒 Achetés", consumed: "🔥 Consommés", add: "Ajouter",
+        daysRemain: "jours", finishOn: "se terminent le", noTracking: "Ajoutez la première ligne pour commencer",
+        overviewTitle: "Grafici", monthlyPlan: "Plan Mensuel", familyMonthly: "Total Famille — Derniers mois",
+        essential: "Essentiel", extra: "Extra", saving: "Épargne",
+        catSpesa: "Courses", catMangiare: "Resto", catProgrammati: "Programmés",
+        catShopping: "Shopping", catVarie: "Divers", catDivertimento: "Loisirs",
+        catSalute: "Santé", catTrasporti: "Transport", catServizi: "Services",
+        sectionComune: "COMMUN", sectionPersonale: "PERSONNEL", sectionRisparmi: "ÉPARGNE",
+        autoSplit: "répartition auto %", manualSplit: "manuel",
+        revolut: "Revolut Commun", spent: "Dépensé", perDay: "€/jour", dayLabel: "jour", monthlyPlanLabel: "Plan Mensuel", familyMonthlyLabel: "Total Famille — Derniers mois",
+    },
+};
+const LANG_OPTIONS = [
+    { code: "it", label: "🇮🇹 Italiano" },
+    { code: "en", label: "🇬🇧 English" },
+    { code: "es", label: "🇪🇸 Español" },
+    { code: "de", label: "🇩🇪 Deutsch" },
+    { code: "fr", label: "🇫🇷 Français" },
+];
+const YEARS = [2024, 2025, 2026, 2027];
+const CATEGORIE_BASE = [
+    { id: "spesa", tKey: "catSpesa", color: "#e67e22", bg: "rgba(230,126,34,0.2)" },
+    { id: "mangiare_fuori", tKey: "catMangiare", color: "#27ae60", bg: "rgba(39,174,96,0.2)" },
+    { id: "programmati", tKey: "catProgrammati", color: "#2980b9", bg: "rgba(41,128,185,0.2)" },
+    { id: "shopping", tKey: "catShopping", color: "#8e44ad", bg: "rgba(142,68,173,0.2)" },
+    { id: "varie", tKey: "catVarie", color: "#7f8c8d", bg: "rgba(127,140,141,0.2)" },
+    { id: "divertimento", tKey: "catDivertimento", color: "#16a085", bg: "rgba(22,160,133,0.2)" },
+    { id: "salute", tKey: "catSalute", color: "#e74c3c", bg: "rgba(231,76,60,0.2)" },
+    { id: "trasporti", tKey: "catTrasporti", color: "#c0392b", bg: "rgba(192,57,43,0.2)" },
+    { id: "servizi", tKey: "catServizi", color: "#2c3e50", bg: "rgba(44,62,80,0.2)" },
+];
+const PLAN_STRUCTURE = [
+    {
+        id: "revolut_cointestato", label: "Revolut Cointestato", section: "COMUNE", splitMode: "auto",
+        color: "#c0392b", bg: "rgba(192,57,43,0.13)", borderColor: "rgba(192,57,43,0.35)", pill: "#c0392b",
+        items: [
+            { id: "spese_essenziali", name: "Spese Essenziali", desc: "", cat: "essential" },
+            { id: "netflix", name: "Netflix", desc: "Visa Condivisa Diego", day: 3, cat: "extra" },
+            { id: "discovery", name: "Discovery+", desc: "Visa Condivisa Diego", day: 8, cat: "extra" },
+            { id: "icloud", name: "iCloud+ Apple", desc: "Visa Condivisa Diego", day: 6, cat: "extra" },
+            { id: "disney", name: "Disney+", desc: "Visa Condivisa Diego", day: 10, cat: "extra" },
+            { id: "assic_betty", name: "Assicurazione Betty", desc: "", day: 4, cat: "essential" },
+            { id: "telethon", name: "Telethon", desc: "", day: 16, cat: "extra" },
+            { id: "amazon_prime", name: "Amazon Prime", desc: "Visa Condivisa Diego", day: 19, cat: "extra" },
+            { id: "paramount", name: "Paramount", desc: "Visa Condivisa Diego", day: 18, cat: "extra" },
+            { id: "youtube", name: "Youtube Premium", desc: "Visa Condivisa Diego", day: 28, cat: "extra" },
+            { id: "hello_fresh", name: "Hello Fresh", desc: "", cat: "extra" },
+            { id: "easypark", name: "EasyPark", desc: "Visa Condivisa Diego", cat: "extra" },
+        ],
+    },
+    {
+        id: "vaults", label: "Vaults", section: "COMUNE", splitMode: "auto",
+        color: "#d35400", bg: "rgba(211,84,0,0.10)", borderColor: "rgba(211,84,0,0.32)", pill: "#d35400",
+        items: [
+            { id: "contanti", name: "Contanti", desc: "", cat: "essential" },
+            { id: "mutuo", name: "Mutuo", desc: "Rata 28° (€800) + Interessi Passivi Annuali Marzo (€1.500)", cat: "essential" },
+            { id: "scuole", name: "Scuole Puzzetti", desc: "Mensa + Doposcuola + LingoKids", cat: "essential" },
+            { id: "bollette", name: "Bollette", desc: "Enel + Telepass + Fastweb (15°) + Prima assic. Casa (€313,90 ann. 04/12)", cat: "essential" },
+            { id: "macchina", name: "Macchina", desc: "Ass. RCA Conte.it €415 ann. | Finanziamento €568,21/mese | Anticipo dopo 4 anni €12.000", cat: "essential" },
+            { id: "assic_medica", name: "Assicurazione Medica", desc: "UniSalute", cat: "essential" },
+            { id: "pulizia_casa", name: "Pulizia Casa", desc: "Barbara", cat: "extra" },
+            { id: "montagna", name: "Montagna", desc: "Romeno, etc.", cat: "extra" },
+            { id: "mare", name: "Mare", desc: "", cat: "extra" },
+            { id: "viaggi", name: "Viaggi", desc: "Roma, Torino, Ponti, Weekend, Estero + Parigi-Disneyland (fine Maggio)", cat: "extra" },
+            { id: "bettona", name: "Bettona & Caramellina", desc: "Spese veterinarie, sitting", cat: "extra" },
+            { id: "regali", name: "Regali", desc: "Natale, Compleanni, Onomastici", cat: "extra" },
+            { id: "vestiti_ed", name: "Vestiti Elena & Davide", desc: "", cat: "extra" },
+            { id: "sfizi_famiglia", name: "Sfizi Famiglia", desc: "Per casa, lavori, etc.", cat: "extra" },
+            { id: "mangiare_fuori", name: "Mangiare Fuori", desc: "", cat: "extra" },
+            { id: "attivita_puzzetti", name: "Attività Puzzetti", desc: "Centro estivo, Nuoto Davide, Inglese", cat: "extra" },
+            { id: "matrimonio", name: "Matrimonio", desc: "", cat: "extra" },
+        ],
+    },
+    {
+        id: "personale", label: "Personale", section: "PERSONALE", splitMode: "manual",
+        color: "#6c3483", bg: "rgba(108,52,131,0.12)", borderColor: "rgba(108,52,131,0.35)", pill: "#8e44ad",
+        items: [
+            { id: "pensione", name: "Pensione", desc: "", cat: "saving" },
+            { id: "onepassword", name: "1Password", desc: "€31,69 – Annuale – 14 Set", cat: "extra" },
+            { id: "google_one", name: "Google One", desc: "€99,99 – Annuale – 25 Feb", cat: "extra" },
+            { id: "dentista", name: "Dentista", desc: "Pulizia dei denti", cat: "essential" },
+            { id: "ps_plus", name: "PS+", desc: "€125 – Annuale – 12 Mar", cat: "extra" },
+            { id: "crossfit", name: "Crossfit / Pilates", desc: "", cat: "extra" },
+            { id: "surfshark", name: "Surfshark", desc: "€50 – Annuale – 17 Feb – PayPal Diego", cat: "extra" },
+            { id: "vestiti_sfizi", name: "Vestiti / Sfizi", desc: "", cat: "extra" },
+            { id: "parrucchiere", name: "Parrucchiere / Estetista", desc: "", cat: "extra" },
+            { id: "commercialista", name: "Commercialista", desc: "", cat: "essential" },
+            { id: "telefonino", name: "Telefonino", desc: "", cat: "essential" },
+        ],
+    },
+    {
+        id: "risparmi", label: "Risparmi", section: "RISPARMI", splitMode: "manual",
+        color: "#1e8449", bg: "rgba(30,132,73,0.10)", borderColor: "rgba(30,132,73,0.32)", pill: "#27ae60",
+        items: [
+            { id: "risparmi", name: "Risparmi", desc: "", cat: "saving" },
+        ],
+    },
+];
+const SECTION_LABELS = {
+    COMUNE: { color: "#c0392b", label: "COMUNE", tKey: "sectionComune" },
+    PERSONALE: { color: "#6c3483", label: "PERSONALE", tKey: "sectionPersonale" },
+    RISPARMI: { color: "#1e8449", label: "RISPARMI", tKey: "sectionRisparmi" },
+};
+const fmt = (n) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n || 0);
+const pct = (n) => (typeof n === "number" ? n.toFixed(1) + "%" : "0.0%");
+const today = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 function FamilyCodeWidget() {
     const [meta, setMeta] = React.useState(null);
     React.useEffect(() => {
@@ -882,6 +1386,14 @@ function App() {
     const [activeCell, setActiveCell] = (0, React.useState)(null);
     const [pelletLog, setPelletLog] = (0, React.useState)([]);
     const [pelletForm, setPelletForm] = (0, React.useState)({ date: today(), comprati: "", consumati: "" });
+    // === CASA: Lavori / Overview / Mutuo ===
+    const [lavori, setLavori] = (0, React.useState)([]);
+    const [casaMeta, setCasaMeta] = (0, React.useState)({ valoreVendita: 580000, mutuoRimanente: 138660, rogitoDiego: 210688.31, rogitoCarmen: 0 });
+    const [mutuoPagamenti, setMutuoPagamenti] = (0, React.useState)({});
+    const [showLavoriForm, setShowLavoriForm] = (0, React.useState)(false);
+    const [editingLavoro, setEditingLavoro] = (0, React.useState)(null);
+    const [lavoriForm, setLavoriForm] = (0, React.useState)({ data: today(), fornitore: "", prodotto: "", categoria: "lavori", dettagli: "", preventivo: "", iva: 0, pagatoDiego: "", pagatoCarmen: "", pagatoCoint: "", daPagareDiego: "", daPagareCarmen: "", daPagareCoint: "" });
+    const [lavoriFilter, setLavoriFilter] = (0, React.useState)("all");
     const [editingPellet, setEditingPellet] = (0, React.useState)(null);
     const [showPelletForm, setShowPelletForm] = (0, React.useState)(false);
     const [editingItem, setEditingItem] = (0, React.useState)(null); // id of item being edited (day/desc)
@@ -958,6 +1470,24 @@ function App() {
                     setPelletLog(JSON.parse(p));
             }
             catch (_h) { }
+            try {
+                const lv = localStorage.getItem("bgt-lavori");
+                if (lv)
+                    setLavori(JSON.parse(lv));
+            }
+            catch (_j) { }
+            try {
+                const cm = localStorage.getItem("bgt-casa-meta");
+                if (cm)
+                    setCasaMeta(JSON.parse(cm));
+            }
+            catch (_k) { }
+            try {
+                const mp = localStorage.getItem("bgt-mutuo");
+                if (mp)
+                    setMutuoPagamenti(JSON.parse(mp));
+            }
+            catch (_l) { }
             setLoaded(true);
         }
         load();
@@ -1012,6 +1542,9 @@ function App() {
     const saveUscite = async (v) => { setUscite(v); localStorage.setItem("bgt-uscite", JSON.stringify(v)); };
     const saveBollette = async (v) => { setBollette(v); localStorage.setItem("bgt-bollette", JSON.stringify(v)); };
     const savePelletLog = async (v) => { setPelletLog(v); localStorage.setItem("bgt-pellet", JSON.stringify(v)); };
+    const saveLavori = (v) => { setLavori(v); localStorage.setItem("bgt-lavori", JSON.stringify(v)); };
+    const saveCasaMeta = (v) => { setCasaMeta(v); localStorage.setItem("bgt-casa-meta", JSON.stringify(v)); };
+    const saveMutuoPagamenti = (v) => { setMutuoPagamenti(v); localStorage.setItem("bgt-mutuo", JSON.stringify(v)); };
     const N1 = names.p1 || "Persona 1";
     const N2 = names.p2 || "Persona 2";
     const hasNames = names.p1 && names.p2;
@@ -2289,11 +2822,341 @@ function App() {
                             " (",
                             e.cPct.toFixed(1),
                             "%)")))))))))),
+        (tab === "casa" && subTab === "lavori") && (() => {
+            const LCAT = [
+                { id: "lavori", label: t("catLavori"), color: "#e67e22", bg: "rgba(230,126,34,0.12)" },
+                { id: "acquisti", label: t("catAcquisti"), color: "#3498db", bg: "rgba(52,152,219,0.12)" },
+                { id: "servizi", label: t("catServiziCasa"), color: "#9b59b6", bg: "rgba(155,89,182,0.12)" },
+            ];
+            const getLC = (id) => LCAT.find(c => c.id === id) || LCAT[0];
+            const pf = (v) => parseFloat(v) || 0;
+            const filtered = lavoriFilter === "all" ? lavori : lavori.filter(l => l.categoria === lavoriFilter);
+            // Totals
+            const totPrev = lavori.reduce((a, l) => a + pf(l.preventivo), 0);
+            const totPagD = lavori.reduce((a, l) => a + pf(l.pagatoDiego), 0);
+            const totPagC = lavori.reduce((a, l) => a + pf(l.pagatoCarmen), 0);
+            const totPagDC = lavori.reduce((a, l) => a + pf(l.pagatoCoint), 0);
+            const totDaPagD = lavori.reduce((a, l) => a + pf(l.daPagareDiego), 0);
+            const totDaPagC = lavori.reduce((a, l) => a + pf(l.daPagareCarmen), 0);
+            const totDaPagDC = lavori.reduce((a, l) => a + pf(l.daPagareCoint), 0);
+            const totPagato = totPagD + totPagC + totPagDC;
+            const totDaPagare = totDaPagD + totDaPagC + totDaPagDC;
+            const resetForm = () => setLavoriForm({ data: today(), fornitore: "", prodotto: "", categoria: "lavori", dettagli: "", preventivo: "", iva: 0, pagatoDiego: "", pagatoCarmen: "", pagatoCoint: "", daPagareDiego: "", daPagareCarmen: "", daPagareCoint: "" });
+            const saveLavoro = () => {
+                if (!lavoriForm.fornitore && !lavoriForm.prodotto)
+                    return;
+                if (editingLavoro) {
+                    saveLavori(lavori.map(l => l.id === editingLavoro ? Object.assign(Object.assign({}, l), lavoriForm) : l));
+                    setEditingLavoro(null);
+                }
+                else {
+                    saveLavori([...lavori, Object.assign(Object.assign({}, lavoriForm), { id: Date.now() })]);
+                }
+                resetForm();
+                setShowLavoriForm(false);
+            };
+            const startEditLavoro = (l) => {
+                setEditingLavoro(l.id);
+                setLavoriForm(Object.assign({}, l));
+                setShowLavoriForm(true);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            };
+            const deleteLavoro = (id) => saveLavori(lavori.filter(l => l.id !== id));
+            return (React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 10, color: "#555", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 16 } }, t("lavoriTitle")),
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 16 } }, [
+                    { label: "Preventivo totale", val: totPrev, color: "#e8c547" },
+                    { label: "Totale pagato", val: totPagato, color: "#27ae60" },
+                    { label: "Da pagare", val: totDaPagare, color: totDaPagare > 0 ? "#e74c3c" : "#555" },
+                ].map(c => (React.createElement("div", { key: c.label, style: { background: "#141418", border: "1px solid #1f1f28", borderRadius: 12, padding: "12px 14px" } },
+                    React.createElement("div", { style: { fontSize: 9, color: "#555", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4 } }, c.label),
+                    React.createElement("div", { style: { fontFamily: "'DM Serif Display',serif", fontSize: 16, color: c.color } }, fmt(c.val)))))),
+                totPagato > 0 && (React.createElement("div", { style: { background: "#141418", border: "1px solid #1f1f28", borderRadius: 12, padding: "12px 14px", marginBottom: 16, display: "flex", gap: 16, flexWrap: "wrap" } },
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 9, color: "#4a9eff", fontWeight: 700, marginBottom: 2 } }, N1),
+                        React.createElement("div", { style: { fontSize: 14 } }, fmt(totPagD))),
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 9, color: "#ff6b9d", fontWeight: 700, marginBottom: 2 } }, N2),
+                        React.createElement("div", { style: { fontSize: 14 } }, fmt(totPagC))),
+                    React.createElement("div", null,
+                        React.createElement("div", { style: { fontSize: 9, color: "#e8c547", fontWeight: 700, marginBottom: 2 } },
+                            N1,
+                            "&",
+                            N2),
+                        React.createElement("div", { style: { fontSize: 14 } }, fmt(totPagDC))))),
+                React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 14 } },
+                    React.createElement("button", { onClick: () => { if (showLavoriForm && !editingLavoro) {
+                            setShowLavoriForm(false);
+                        }
+                        else {
+                            resetForm();
+                            setEditingLavoro(null);
+                            setShowLavoriForm(true);
+                        } }, style: { flex: 1, background: showLavoriForm && !editingLavoro ? "#1f1f28" : "#e8c547", color: showLavoriForm && !editingLavoro ? "#555" : "#0d0d0f", borderRadius: 10, padding: "10px", fontSize: 13, fontWeight: 600 } }, showLavoriForm && !editingLavoro ? "✕ Annulla" : t("addLavoro")),
+                    React.createElement("select", { value: lavoriFilter, onChange: e => setLavoriFilter(e.target.value), style: { width: 130, padding: "8px 10px", fontSize: 12 } },
+                        React.createElement("option", { value: "all" }, "Tutte le categorie"),
+                        LCAT.map(c => React.createElement("option", { key: c.id, value: c.id }, c.label)))),
+                showLavoriForm && (React.createElement("div", { style: { background: "#141418", border: "1px solid #252530", borderRadius: 14, padding: 16, marginBottom: 16 } },
+                    React.createElement("div", { style: { fontSize: 11, color: "#555", letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 } }, editingLavoro ? t("editLavoro") : t("addLavoro")),
+                    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+                        React.createElement("div", null,
+                            React.createElement("div", { style: { fontSize: 11, color: "#666", marginBottom: 5 } }, "Categoria"),
+                            React.createElement("div", { style: { display: "flex", gap: 6 } }, LCAT.map(c => (React.createElement("button", { key: c.id, onClick: () => setLavoriForm(f => (Object.assign(Object.assign({}, f), { categoria: c.id }))), style: { flex: 1, padding: "7px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: lavoriForm.categoria === c.id ? c.color : "transparent", color: lavoriForm.categoria === c.id ? "#fff" : c.color, border: `1.5px solid ${c.color}` } }, c.label))))),
+                        React.createElement("div", { style: { display: "flex", gap: 8 } },
+                            React.createElement("div", { style: { flex: 1 } },
+                                React.createElement("div", { style: { fontSize: 11, color: "#666", marginBottom: 4 } }, "Data"),
+                                React.createElement("input", { type: "date", value: lavoriForm.data, onChange: e => setLavoriForm(f => (Object.assign(Object.assign({}, f), { data: e.target.value }))) })),
+                            React.createElement("div", { style: { flex: 2 } },
+                                React.createElement("div", { style: { fontSize: 11, color: "#666", marginBottom: 4 } }, t("fornitore")),
+                                React.createElement("input", { type: "text", placeholder: "es. Nuova Materiali", value: lavoriForm.fornitore, onChange: e => setLavoriForm(f => (Object.assign(Object.assign({}, f), { fornitore: e.target.value }))) }))),
+                        React.createElement("div", null,
+                            React.createElement("div", { style: { fontSize: 11, color: "#666", marginBottom: 4 } }, t("prodotto")),
+                            React.createElement("input", { type: "text", placeholder: "es. Caldaia pellet", value: lavoriForm.prodotto, onChange: e => setLavoriForm(f => (Object.assign(Object.assign({}, f), { prodotto: e.target.value }))) })),
+                        React.createElement("div", null,
+                            React.createElement("div", { style: { fontSize: 11, color: "#666", marginBottom: 4 } }, "Dettagli / Note"),
+                            React.createElement("input", { type: "text", placeholder: "es. Saldo Finale, Acconto 50%...", value: lavoriForm.dettagli, onChange: e => setLavoriForm(f => (Object.assign(Object.assign({}, f), { dettagli: e.target.value }))) })),
+                        React.createElement("div", { style: { display: "flex", gap: 8 } },
+                            React.createElement("div", { style: { flex: 2 } },
+                                React.createElement("div", { style: { fontSize: 11, color: "#666", marginBottom: 4 } }, t("preventivo")),
+                                React.createElement("div", { style: { position: "relative" } },
+                                    React.createElement("span", { style: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#555", fontSize: 12 } }, "\u20AC"),
+                                    React.createElement("input", { type: "number", placeholder: "0,00", value: lavoriForm.preventivo, onChange: e => setLavoriForm(f => (Object.assign(Object.assign({}, f), { preventivo: e.target.value }))), style: { paddingLeft: 24 } }))),
+                            React.createElement("div", { style: { flex: 1 } },
+                                React.createElement("div", { style: { fontSize: 11, color: "#666", marginBottom: 4 } }, t("iva")),
+                                React.createElement("input", { type: "number", placeholder: "10", value: lavoriForm.iva || "", onChange: e => setLavoriForm(f => (Object.assign(Object.assign({}, f), { iva: e.target.value }))), style: { textAlign: "center" } }))),
+                        React.createElement("div", { style: { fontSize: 11, color: "#27ae60", fontWeight: 700, letterSpacing: 0.8, marginTop: 2 } }, "PAGATO"),
+                        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 } }, [["pagatoDiego", N1, "#4a9eff"], ["pagatoCarmen", N2, "#ff6b9d"], ["pagatoCoint", N1 + "&" + N2, "#e8c547"]].map(([k, lbl, c]) => (React.createElement("div", { key: k },
+                            React.createElement("div", { style: { fontSize: 9, color: c, fontWeight: 700, marginBottom: 3 } }, lbl),
+                            React.createElement("div", { style: { position: "relative" } },
+                                React.createElement("span", { style: { position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "#555", fontSize: 11 } }, "\u20AC"),
+                                React.createElement("input", { type: "number", placeholder: "0", value: lavoriForm[k] || "", onChange: e => setLavoriForm(f => (Object.assign(Object.assign({}, f), { [k]: e.target.value }))), style: { paddingLeft: 20, padding: "7px 8px 7px 20px", fontSize: 12 } })))))),
+                        React.createElement("div", { style: { fontSize: 11, color: "#e74c3c", fontWeight: 700, letterSpacing: 0.8 } }, "DA PAGARE"),
+                        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 } }, [["daPagareDiego", N1, "#4a9eff"], ["daPagareCarmen", N2, "#ff6b9d"], ["daPagareCoint", N1 + "&" + N2, "#e8c547"]].map(([k, lbl, c]) => (React.createElement("div", { key: k },
+                            React.createElement("div", { style: { fontSize: 9, color: c, fontWeight: 700, marginBottom: 3 } }, lbl),
+                            React.createElement("div", { style: { position: "relative" } },
+                                React.createElement("span", { style: { position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "#555", fontSize: 11 } }, "\u20AC"),
+                                React.createElement("input", { type: "number", placeholder: "0", value: lavoriForm[k] || "", onChange: e => setLavoriForm(f => (Object.assign(Object.assign({}, f), { [k]: e.target.value }))), style: { paddingLeft: 20, padding: "7px 8px 7px 20px", fontSize: 12 } })))))),
+                        React.createElement("button", { onClick: saveLavoro, style: { background: "#e8c547", color: "#0d0d0f", borderRadius: 10, padding: "12px", fontSize: 14, fontWeight: 700, marginTop: 2 } }, editingLavoro ? "💾 Salva Modifiche" : "Salva Voce")))),
+                filtered.length === 0 ? (React.createElement("div", { style: { textAlign: "center", color: "#333", fontSize: 13, padding: "40px 0" } }, lavori.length === 0 ? "Aggiungi la prima voce" : "Nessuna voce in questa categoria")) : (React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, [...filtered].sort((a, b) => b.data.localeCompare(a.data)).map(l => {
+                    const cat = getLC(l.categoria);
+                    const dateParsed = new Date(l.data);
+                    const dateStr = `${String(dateParsed.getDate()).padStart(2, "0")}/${String(dateParsed.getMonth() + 1).padStart(2, "0")}/${dateParsed.getFullYear()}`;
+                    const pagTot = (parseFloat(l.pagatoDiego) || 0) + (parseFloat(l.pagatoCarmen) || 0) + (parseFloat(l.pagatoCoint) || 0);
+                    const dpTot = (parseFloat(l.daPagareDiego) || 0) + (parseFloat(l.daPagareCarmen) || 0) + (parseFloat(l.daPagareCoint) || 0);
+                    return (React.createElement("div", { key: l.id, style: { background: "#141418", borderRadius: 11, padding: "12px 14px", borderLeft: `3px solid ${cat.color}` } },
+                        React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 10 } },
+                            React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 3, flexWrap: "wrap" } },
+                                    React.createElement("span", { style: { fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: cat.color, color: "#fff", textTransform: "uppercase" } }, cat.label),
+                                    React.createElement("span", { style: { fontSize: 11, color: "#555" } }, dateStr)),
+                                React.createElement("div", { style: { fontSize: 14, color: "#ddd", fontWeight: 600 } }, l.fornitore),
+                                React.createElement("div", { style: { fontSize: 13, color: "#888" } }, l.prodotto),
+                                l.dettagli && React.createElement("div", { style: { fontSize: 11, color: "#555", marginTop: 2 } }, l.dettagli),
+                                React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" } },
+                                    parseFloat(l.preventivo) > 0 && React.createElement("span", { style: { fontSize: 11, color: "#e8c547" } },
+                                        "Prev: ",
+                                        fmt(parseFloat(l.preventivo))),
+                                    pagTot > 0 && React.createElement("span", { style: { fontSize: 11, color: "#27ae60" } },
+                                        "Pag: ",
+                                        fmt(pagTot)),
+                                    dpTot > 0 && React.createElement("span", { style: { fontSize: 11, color: "#e74c3c" } },
+                                        "Da pag: ",
+                                        fmt(dpTot))),
+                                (pagTot > 0 || dpTot > 0) && (React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" } },
+                                    [["pagatoDiego", N1, "#4a9eff"], ["pagatoCarmen", N2, "#ff6b9d"], ["pagatoCoint", N1 + "&" + N2, "#e8c547"]].filter(([k]) => parseFloat(l[k]) > 0).map(([k, lbl, c]) => (React.createElement("span", { key: k, style: { fontSize: 10, color: c, background: `${c}15`, borderRadius: 5, padding: "2px 7px" } },
+                                        "\u2713",
+                                        lbl,
+                                        " ",
+                                        fmt(parseFloat(l[k]))))),
+                                    [["daPagareDiego", N1, "#4a9eff"], ["daPagareCarmen", N2, "#ff6b9d"], ["daPagareCoint", N1 + "&" + N2, "#e8c547"]].filter(([k]) => parseFloat(l[k]) > 0).map(([k, lbl, c]) => (React.createElement("span", { key: k, style: { fontSize: 10, color: "#e74c3c", background: "rgba(231,76,60,0.1)", borderRadius: 5, padding: "2px 7px" } },
+                                        "\u26A0",
+                                        lbl,
+                                        " ",
+                                        fmt(parseFloat(l[k])))))))),
+                            React.createElement("div", { style: { display: "flex", gap: 4, flexShrink: 0 } },
+                                React.createElement("button", { onClick: () => startEditLavoro(l), style: { color: "#555", fontSize: 14, padding: "2px 4px" } }, "\u270F\uFE0F"),
+                                React.createElement("button", { onClick: () => deleteLavoro(l.id), style: { color: "#2a2a35", fontSize: 18, padding: "0 3px" } }, "\u00D7")))));
+                })))));
+        })(),
+        (tab === "casa" && subTab === "overview_casa") && (() => {
+            const pf = (v) => parseFloat(v) || 0;
+            // Sum lavori by person
+            const lavD = lavori.reduce((a, l) => a + pf(l.pagatoDiego) + (pf(l.pagatoCoint) / 2), 0);
+            const lavC = lavori.reduce((a, l) => a + pf(l.pagatoCarmen) + (pf(l.pagatoCoint) / 2), 0);
+            // Mutuo paid by each (split 50/50 by default)
+            const mutuoTotale = Object.values(mutuoPagamenti).reduce((a, v) => a + pf(v), 0);
+            const mutuoD = mutuoTotale / 2;
+            const mutuoC = mutuoTotale / 2;
+            // Total per person
+            const totD = pf(casaMeta.rogitoDiego) + lavD + mutuoD;
+            const totC = pf(casaMeta.rogitoCarmen) + lavC + mutuoC;
+            const totTot = totD + totC;
+            const percD = totTot > 0 ? (totD / totTot) * 100 : 50;
+            const percC = totTot > 0 ? (totC / totTot) * 100 : 50;
+            // Da pagare residuo
+            const daPagareD = lavori.reduce((a, l) => a + pf(l.daPagareDiego) + (pf(l.daPagareCoint) / 2), 0);
+            const daPagareC = lavori.reduce((a, l) => a + pf(l.daPagareCarmen) + (pf(l.daPagareCoint) / 2), 0);
+            // Future value calculation
+            const valVendita = pf(casaMeta.valoreVendita);
+            const mutuoRim = pf(casaMeta.mutuoRimanente);
+            const rimanenteNoi = valVendita - mutuoRim;
+            const rimanenteD = rimanenteNoi * (percD / 100);
+            const rimanenteC = rimanenteNoi * (percC / 100);
+            const deltaD = rimanenteD - totD;
+            const deltaC = rimanenteC - totC;
+            const InputField = ({ label, field, color = "#e8c547" }) => (React.createElement("div", { style: { flex: 1 } },
+                React.createElement("div", { style: { fontSize: 10, color: "#666", fontWeight: 700, letterSpacing: 0.8, marginBottom: 4 } }, label),
+                React.createElement("div", { style: { position: "relative" } },
+                    React.createElement("span", { style: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#555", fontSize: 12 } }, "\u20AC"),
+                    React.createElement("input", { type: "number", value: casaMeta[field] || "", onChange: e => saveCasaMeta(Object.assign(Object.assign({}, casaMeta), { [field]: e.target.value })), style: { paddingLeft: 24, borderColor: `${color}33` } }))));
+            return (React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 10, color: "#555", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 16 } }, t("overviewCasaTitle")),
+                React.createElement("div", { style: { background: "#141418", border: "1px solid #1f1f28", borderRadius: 14, padding: 16, marginBottom: 16 } },
+                    React.createElement("div", { style: { fontSize: 11, color: "#e8c547", fontWeight: 700, letterSpacing: 1, marginBottom: 12 } }, "PARAMETRI"),
+                    React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 } },
+                        React.createElement(InputField, { label: "Valore vendita stimato", field: "valoreVendita", color: "#e8c547" }),
+                        React.createElement(InputField, { label: "Mutuo da ripagare", field: "mutuoRimanente", color: "#e74c3c" })),
+                    React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } },
+                        React.createElement("div", { style: { flex: 1 } },
+                            React.createElement("div", { style: { fontSize: 10, color: "#4a9eff", fontWeight: 700, letterSpacing: 0.8, marginBottom: 4 } },
+                                "ROGITO ",
+                                N1),
+                            React.createElement("div", { style: { position: "relative" } },
+                                React.createElement("span", { style: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#555", fontSize: 12 } }, "\u20AC"),
+                                React.createElement("input", { type: "number", value: casaMeta.rogitoDiego || "", onChange: e => saveCasaMeta(Object.assign(Object.assign({}, casaMeta), { rogitoDiego: e.target.value })), style: { paddingLeft: 24, borderColor: "rgba(74,158,255,0.3)" } }))),
+                        React.createElement("div", { style: { flex: 1 } },
+                            React.createElement("div", { style: { fontSize: 10, color: "#ff6b9d", fontWeight: 700, letterSpacing: 0.8, marginBottom: 4 } },
+                                "ROGITO ",
+                                N2),
+                            React.createElement("div", { style: { position: "relative" } },
+                                React.createElement("span", { style: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#555", fontSize: 12 } }, "\u20AC"),
+                                React.createElement("input", { type: "number", value: casaMeta.rogitoCarmen || "", onChange: e => saveCasaMeta(Object.assign(Object.assign({}, casaMeta), { rogitoCarmen: e.target.value })), style: { paddingLeft: 24, borderColor: "rgba(255,107,157,0.3)" } }))))),
+                React.createElement("div", { style: { background: "#141418", border: "1px solid #1f1f28", borderRadius: 14, padding: 16, marginBottom: 16 } },
+                    React.createElement("div", { style: { fontSize: 11, color: "#aaa", fontWeight: 700, letterSpacing: 1, marginBottom: 14 } }, "TOTALE INVESTITO"),
+                    React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 12 } }, [[N1, percD, totD, "#4a9eff"], [N2, percC, totC, "#ff6b9d"]].map(([lbl, perc, tot, c]) => (React.createElement("div", { key: lbl, style: { flex: 1, background: `${c}0d`, border: `1px solid ${c}22`, borderRadius: 12, padding: "14px 16px" } },
+                        React.createElement("div", { style: { fontSize: 11, color: c, fontWeight: 700, letterSpacing: 1, marginBottom: 6 } }, lbl),
+                        React.createElement("div", { style: { fontFamily: "'DM Serif Display',serif", fontSize: 22, marginBottom: 4 } }, fmt(tot)),
+                        React.createElement("div", { style: { fontSize: 20, color: c, fontWeight: 700 } },
+                            perc.toFixed(1),
+                            "%"))))),
+                    [
+                        ["🏠 Rogito", pf(casaMeta.rogitoDiego), pf(casaMeta.rogitoCarmen)],
+                        ["🔨 Lavori & Acquisti", lavD, lavC],
+                        ["🏦 Mutuo pagato", mutuoD, mutuoC],
+                    ].map(([lbl, vD, vC]) => (React.createElement("div", { key: lbl, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderTop: "1px solid #1a1a22" } },
+                        React.createElement("span", { style: { fontSize: 12, color: "#666" } }, lbl),
+                        React.createElement("div", { style: { display: "flex", gap: 16 } },
+                            React.createElement("span", { style: { fontSize: 12, color: "#4a9eff" } }, fmt(vD)),
+                            React.createElement("span", { style: { fontSize: 12, color: "#ff6b9d" } }, fmt(vC)))))),
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderTop: "2px solid #2a2a35", marginTop: 4 } },
+                        React.createElement("span", { style: { fontSize: 13, color: "#aaa", fontWeight: 600 } }, "TOTALE"),
+                        React.createElement("div", { style: { display: "flex", gap: 16 } },
+                            React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: "#4a9eff" } }, fmt(totD)),
+                            React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: "#ff6b9d" } }, fmt(totC)))),
+                    React.createElement("div", { style: { height: 8, borderRadius: 4, overflow: "hidden", display: "flex", marginTop: 8 } },
+                        React.createElement("div", { style: { width: `${percD}%`, background: "#4a9eff", transition: "width 0.5s" } }),
+                        React.createElement("div", { style: { width: `${percC}%`, background: "#ff6b9d", transition: "width 0.5s" } })),
+                    (daPagareD + daPagareC) > 0 && (React.createElement("div", { style: { marginTop: 10, background: "rgba(231,76,60,0.07)", border: "1px solid rgba(231,76,60,0.2)", borderRadius: 8, padding: "8px 12px", display: "flex", justifyContent: "space-between" } },
+                        React.createElement("span", { style: { fontSize: 12, color: "#e74c3c" } }, "\u26A0 Da pagare residuo"),
+                        React.createElement("div", { style: { display: "flex", gap: 12 } },
+                            daPagareD > 0 && React.createElement("span", { style: { fontSize: 12, color: "#4a9eff" } },
+                                N1,
+                                ": ",
+                                fmt(daPagareD)),
+                            daPagareC > 0 && React.createElement("span", { style: { fontSize: 12, color: "#ff6b9d" } },
+                                N2,
+                                ": ",
+                                fmt(daPagareC)))))),
+                React.createElement("div", { style: { background: "#141418", border: "1px solid #1f1f28", borderRadius: 14, padding: 16, marginBottom: 16 } },
+                    React.createElement("div", { style: { fontSize: 11, color: "#e8c547", fontWeight: 700, letterSpacing: 1, marginBottom: 14 } }, "SIMULATORE VENDITA"),
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 8 } },
+                        React.createElement("span", { style: { fontSize: 12, color: "#666" } }, "Valore vendita"),
+                        React.createElement("span", { style: { fontSize: 14, color: "#e8c547", fontWeight: 600 } }, fmt(valVendita))),
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 8 } },
+                        React.createElement("span", { style: { fontSize: 12, color: "#666" } }, "Mutuo da ripagare"),
+                        React.createElement("span", { style: { fontSize: 14, color: "#e74c3c" } },
+                            "- ",
+                            fmt(mutuoRim))),
+                    React.createElement("div", { style: { height: 1, background: "#2a2a35", marginBottom: 8 } }),
+                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 14 } },
+                        React.createElement("span", { style: { fontSize: 13, color: "#aaa", fontWeight: 600 } }, "Rimanente a voi"),
+                        React.createElement("span", { style: { fontFamily: "'DM Serif Display',serif", fontSize: 20, color: rimanenteNoi > 0 ? "#27ae60" : "#e74c3c" } }, fmt(rimanenteNoi))),
+                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, [[N1, percD, rimanenteD, deltaD, "#4a9eff"], [N2, percC, rimanenteC, deltaC, "#ff6b9d"]].map(([lbl, perc, rim, delta, c]) => (React.createElement("div", { key: lbl, style: { background: `${c}0d`, border: `1px solid ${c}22`, borderRadius: 12, padding: "12px 14px" } },
+                        React.createElement("div", { style: { fontSize: 10, color: c, fontWeight: 700, marginBottom: 6 } },
+                            lbl,
+                            " (",
+                            perc.toFixed(1),
+                            "%)"),
+                        React.createElement("div", { style: { fontFamily: "'DM Serif Display',serif", fontSize: 18, marginBottom: 4 } }, fmt(rim)),
+                        React.createElement("div", { style: { fontSize: 11, color: delta >= 0 ? "#27ae60" : "#e74c3c" } },
+                            delta >= 0 ? "+" : "",
+                            fmt(delta),
+                            " netto"))))))));
+        })(),
+        (tab === "casa" && subTab === "mutuo") && (() => {
+            const pf = (v) => parseFloat(v) || 0;
+            // Build month list from start date
+            const startYear = parseInt(casaMeta.mutuoStartYear) || 2023;
+            const startMonth = parseInt(casaMeta.mutuoStartMonth) || 6; // 0-indexed, July=6
+            const months = [];
+            const now = new Date();
+            let y = startYear, m = startMonth;
+            while (y < now.getFullYear() + 2 || (y === now.getFullYear() + 2 && m <= now.getMonth())) {
+                const key = `${y}-${String(m + 1).padStart(2, "0")}`;
+                months.push({ key, label: `${MONTHS[m]} ${y}`, y, m });
+                m++;
+                if (m > 11) {
+                    m = 0;
+                    y++;
+                }
+                if (months.length > 60)
+                    break; // max 5 anni di proiezione
+            }
+            const totPagato = months.reduce((a, mo) => a + pf(mutuoPagamenti[mo.key]), 0);
+            const mutuoRim = pf(casaMeta.mutuoRimanente);
+            return (React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 10, color: "#555", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 16 } }, t("mutuoTitle")),
+                React.createElement("div", { style: { background: "#141418", border: "1px solid #1f1f28", borderRadius: 12, padding: "12px 16px", marginBottom: 16 } },
+                    React.createElement("div", { style: { fontSize: 11, color: "#666", fontWeight: 700, marginBottom: 10 } }, "INIZIO MUTUO"),
+                    React.createElement("div", { style: { display: "flex", gap: 8 } },
+                        React.createElement("select", { value: casaMeta.mutuoStartMonth || 6, onChange: e => saveCasaMeta(Object.assign(Object.assign({}, casaMeta), { mutuoStartMonth: parseInt(e.target.value) })), style: { flex: 1, padding: "7px 10px", fontSize: 12 } }, MONTHS.map((m, i) => React.createElement("option", { key: i, value: i }, m))),
+                        React.createElement("select", { value: casaMeta.mutuoStartYear || 2023, onChange: e => saveCasaMeta(Object.assign(Object.assign({}, casaMeta), { mutuoStartYear: parseInt(e.target.value) })), style: { flex: 1, padding: "7px 10px", fontSize: 12 } }, [2020, 2021, 2022, 2023, 2024, 2025, 2026].map(y => React.createElement("option", { key: y, value: y }, y))))),
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 } }, [
+                    { label: "Totale pagato", val: totPagato, color: "#27ae60" },
+                    { label: "Mutuo rimanente", val: mutuoRim, color: "#e74c3c" },
+                    { label: "Rate compilate", val: months.filter(mo => mutuoPagamenti[mo.key]).length, color: "#e8c547", isCount: true },
+                ].map(c => (React.createElement("div", { key: c.label, style: { background: "#141418", border: "1px solid #1f1f28", borderRadius: 12, padding: "12px 14px" } },
+                    React.createElement("div", { style: { fontSize: 9, color: "#555", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4 } }, c.label),
+                    React.createElement("div", { style: { fontFamily: "'DM Serif Display',serif", fontSize: 16, color: c.color } }, c.isCount ? c.val : fmt(c.val)))))),
+                React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 3 } }, [...months].reverse().map(mo => {
+                    const val = mutuoPagamenti[mo.key];
+                    const hasPay = val && pf(val) > 0;
+                    const isCurrentMonth = mo.y === now.getFullYear() && mo.m === now.getMonth();
+                    return (React.createElement("div", { key: mo.key, style: { display: "flex", alignItems: "center", gap: 10, background: isCurrentMonth ? "rgba(232,197,71,0.07)" : hasPay ? "#141418" : "#0f0f12", borderRadius: 9, padding: "8px 12px", border: isCurrentMonth ? "1px solid rgba(232,197,71,0.3)" : "1px solid transparent" } },
+                        React.createElement("div", { style: { width: 120, flexShrink: 0 } },
+                            React.createElement("span", { style: { fontSize: 13, color: isCurrentMonth ? "#e8c547" : hasPay ? "#ccc" : "#333", fontWeight: isCurrentMonth ? 700 : 400 } }, mo.label)),
+                        React.createElement("div", { style: { flex: 1, position: "relative" } },
+                            React.createElement("span", { style: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#555", fontSize: 12 } }, "\u20AC"),
+                            React.createElement("input", { type: "number", placeholder: "\u2014", value: val || "", onChange: e => {
+                                    const newVal = e.target.value;
+                                    const updated = Object.assign({}, mutuoPagamenti);
+                                    if (newVal)
+                                        updated[mo.key] = newVal;
+                                    else
+                                        delete updated[mo.key];
+                                    saveMutuoPagamenti(updated);
+                                }, style: { paddingLeft: 24, padding: "7px 10px 7px 24px", fontSize: 13, borderColor: hasPay ? "rgba(39,174,96,0.3)" : "#252530" } })),
+                        hasPay && React.createElement("div", { style: { fontSize: 12, color: "#27ae60", flexShrink: 0, width: 14 } }, "\u2713")));
+                }))));
+        })(),
         isMobile && (React.createElement("div", { style: { position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(13,13,15,0.97)", backdropFilter: "blur(20px)", borderTop: "1px solid #1a1a22", display: "flex", paddingBottom: 20, zIndex: 50 } }, [["entrate", "💰", "tabEntrate"], ["budget", "📋", "tabBudget"], ["spese", "💸", "tabSpese"], ["casa", "🏠", "tabCasa"]].map(([t_, icon, tkey]) => (React.createElement("button", { key: t_, onClick: () => { setTab(t_); setSubTab(t_ === "entrate" ? "entrate_main" : t_ === "budget" ? "plan" : t_ === "spese" ? "uscite" : "bollette"); }, style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "12px 0 4px", border: "none", background: "none", cursor: "pointer", gap: 3, fontFamily: "inherit" } },
             React.createElement("div", { style: { fontSize: 22, lineHeight: 1, filter: tab === t_ ? "none" : "grayscale(1) opacity(0.35)", transition: "all 0.2s" } }, icon),
             React.createElement("div", { style: { fontSize: 10, fontWeight: tab === t_ ? 700 : 400, color: tab === t_ ? "#e8c547" : "#555", letterSpacing: 0.5, textTransform: "uppercase", transition: "all 0.2s" } }, t(tkey)),
             tab === t_ && React.createElement("div", { style: { width: 4, height: 4, borderRadius: "50%", background: "#e8c547" } }))))))));
 }
+// ============================================================
+// PLACEHOLDER - new sections inserted before closing return
+// ============================================================
 
 
           try {
