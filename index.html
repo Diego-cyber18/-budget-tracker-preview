@@ -100,6 +100,8 @@
 
 
 
+
+
 function useIsMobile() {
     const [m, setM] = (0, React.useState)(typeof window !== 'undefined' ? window.innerWidth < 768 : true);
     (0, React.useEffect)(() => {
@@ -981,7 +983,7 @@ function App() {
                     MONTHS[month],
                     " ",
                     year),
-                React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 } }, [
+                React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 20 } }, [
                     { k: "diego", label: N1, color: "#4a9eff", bg: "rgba(74,158,255,0.07)", border: "rgba(74,158,255,0.2)" },
                     { k: "carmen", label: N2, color: "#ff6b9d", bg: "rgba(255,107,157,0.07)", border: "rgba(255,107,157,0.2)" }
                 ].map(({ k, label, color, bg, border }) => {
@@ -1098,7 +1100,7 @@ function App() {
                                         React.createElement("span", { className: "tag", style: { background: group.pill } }, group.label),
                                         groupTotal > 0 && React.createElement("span", { style: { fontSize: 12, color: "#888" } }, fmt(groupTotal))),
                                     React.createElement("span", { style: { color: "#444", fontSize: 11 } }, isGroupCollapsed ? "▶" : "▼")),
-                                !isGroupCollapsed && (React.createElement("div", { style: { background: "#0f0f13" } },
+                                !isGroupCollapsed && (React.createElement("div", { style: { background: "#0f0f13", display: isMobile ? "block" : "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(340px, 1fr))" } },
                                     group.items.map((item, idx) => {
                                         const isManual = group.splitMode === "manual";
                                         const autoAmt = parseFloat(currentPlan[item.id]) || 0;
@@ -1183,7 +1185,7 @@ function App() {
                     } }, style: { width: "100%", background: showForm ? "#1f1f28" : "#e8c547", color: showForm ? "#555" : "#0d0d0f", borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 600, marginBottom: 14, transition: "all 0.2s" } }, showForm ? "✕ Annulla" : t("newExpense")),
                 showForm && (React.createElement("div", { style: { background: "#141418", border: "1px solid #252530", borderRadius: 14, padding: 16, marginBottom: 16 } },
                     React.createElement("div", { style: { fontSize: 11, color: "#555", letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 } }, editingId ? t("editExpense") : t("newExpense")),
-                    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+                    React.createElement("div", { style: { display: isMobile ? "flex" : "grid", flexDirection: "column", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(420px, 1fr))", gap: 10 } },
                         React.createElement("div", null,
                             React.createElement("div", { style: { fontSize: 11, color: "#666", marginBottom: 5 } }, t("category")),
                             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, CATEGORIE.map(c => (React.createElement("button", { key: c.id, onClick: () => setNewCat(c.id), style: { padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: 0.6, background: newCat === c.id ? c.color : "transparent", color: newCat === c.id ? "#fff" : c.color, border: `1.5px solid ${c.color}`, transition: "all 0.15s" } }, c.label))))),
@@ -1210,7 +1212,7 @@ function App() {
                         React.createElement("option", { value: "amount_desc" }, t("sortAmountDesc")),
                         React.createElement("option", { value: "cat" }, t("sortByCat"))))),
                 filteredUscite.length === 0 && (React.createElement("div", { style: { textAlign: "center", color: "#333", fontSize: 13, padding: "40px 0" } }, allMonthUscite.length === 0 ? t("noExpenses") : t("noFilter"))),
-                React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, filteredUscite.map(u => {
+                React.createElement("div", { style: { display: isMobile ? "flex" : "grid", flexDirection: "column", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(380px, 1fr))", gap: 8 } }, filteredUscite.map(u => {
                     const cat = getCat(u.categoria);
                     const d = new Date(u.date);
                     const dateStr = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -1292,7 +1294,7 @@ function App() {
                         React.createElement("div", { style: { fontSize: 32, marginBottom: 12 } }, "\uD83D\uDCCB"),
                         React.createElement("div", { style: { color: "#555", fontSize: 14 } }, t("noPlanData"))));
                 return (React.createElement("div", null,
-                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 } },
+                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 16 } },
                         React.createElement("div", { style: { background: "#141418", border: "1px solid #222", borderRadius: 12, padding: "14px 16px" } },
                             React.createElement("div", { style: { fontSize: 10, color: "#555", letterSpacing: 1, textTransform: "uppercase", marginBottom: 5 } }, t("dailyBudget")),
                             React.createElement("div", { style: { fontFamily: "'DM Serif Display',serif", fontSize: 20, color: "#e8c547" } }, fmt(budgetMensile)),
@@ -1556,7 +1558,7 @@ function App() {
                     React.createElement("div", { style: { fontSize: 11, color: "#666", marginBottom: 10 } },
                         t("monthlyDetail"),
                         " "),
-                    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, sortedKeys.map(k => {
+                    React.createElement("div", { style: { display: isMobile ? "flex" : "grid", flexDirection: "column", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(420px, 1fr))", gap: 10 } }, sortedKeys.map(k => {
                         const [ky, km] = k.split("-");
                         const label = `${MONTHS[parseInt(km) - 1]} ${ky}`;
                         const row = getRow(k);
@@ -1800,7 +1802,7 @@ function App() {
             })(),
             (tab === "entrate" && subTab === "storico") && (React.createElement("div", null,
                 React.createElement("div", { style: { fontSize: 10, color: "#555", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 18 } }, t("storicoTitle")),
-                historyEntries.length === 0 ? (React.createElement("div", { style: { textAlign: "center", color: "#333", fontSize: 13, padding: "40px 0" } }, t("noData"))) : (React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, historyEntries.map(e => (React.createElement("div", { key: e.key, style: { background: "#141418", borderRadius: 12, padding: 16 } },
+                historyEntries.length === 0 ? (React.createElement("div", { style: { textAlign: "center", color: "#333", fontSize: 13, padding: "40px 0" } }, t("noData"))) : (React.createElement("div", { style: { display: isMobile ? "flex" : "grid", flexDirection: "column", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(420px, 1fr))", gap: 10 } }, historyEntries.map(e => (React.createElement("div", { key: e.key, style: { background: "#141418", borderRadius: 12, padding: 16 } },
                     React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 } },
                         React.createElement("span", { style: { fontSize: 15, fontWeight: 500 } },
                             e.month,
