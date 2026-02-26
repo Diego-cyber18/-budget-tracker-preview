@@ -114,6 +114,8 @@
 
 
 
+
+
 function useIsMobile() {
     const [m, setM] = (0, React.useState)(typeof window !== 'undefined' ? window.innerWidth < 768 : true);
     (0, React.useEffect)(() => {
@@ -556,8 +558,7 @@ const PLAN_STRUCTURE = [
         id: "risparmi", label: "Risparmi", section: "RISPARMI", splitMode: "manual",
         color: "#1e8449", bg: "rgba(30,132,73,0.10)", borderColor: "rgba(30,132,73,0.32)", pill: "#27ae60",
         items: [
-            { id: "risparmi_diego", name: "Risparmi Diego", desc: "", cat: "saving" },
-            { id: "risparmi_carmen", name: "Risparmi Carmen", desc: "", cat: "saving" },
+            { id: "risparmi", name: "Risparmi", desc: "", cat: "saving" },
         ],
     },
 ];
@@ -609,6 +610,8 @@ function App() {
     const [editingPellet, setEditingPellet] = (0, React.useState)(null);
     const [editingItem, setEditingItem] = (0, React.useState)(null); // id of item being edited (day/desc)
     const [editItemDraft, setEditItemDraft] = (0, React.useState)({ day: "", desc: "" });
+    const [dragItem, setDragItem] = (0, React.useState)(null); // { groupId, itemId, index }
+    const [dragOver, setDragOver] = (0, React.useState)(null); // { groupId, index }
     const key = `${year}-${String(month + 1).padStart(2, "0")}`;
     (0, React.useEffect)(() => {
         async function load() {
@@ -857,6 +860,18 @@ function App() {
         saveStructure(structure.map(g => g.id === groupId
             ? Object.assign(Object.assign({}, g), { items: g.items.map(i => i.id === itemId ? Object.assign(Object.assign({}, i), { day: day ? parseInt(day) : undefined, desc }) : i) }) : g));
         setEditingItem(null);
+    };
+    const reorderItem = (groupId, fromIdx, toIdx) => {
+        if (fromIdx === toIdx)
+            return;
+        saveStructure(structure.map(g => {
+            if (g.id !== groupId)
+                return g;
+            const items = [...g.items];
+            const [moved] = items.splice(fromIdx, 1);
+            items.splice(toIdx, 0, moved);
+            return Object.assign(Object.assign({}, g), { items });
+        }));
     };
     const addItem = (groupId) => {
         const name = prompt("Nome voce:");
@@ -1130,9 +1145,10 @@ function App() {
                                         const rowTotal = isManual ? dAmt + cAmt : autoAmt;
                                         const hasDesc = !!item.desc;
                                         const isDescOpen = expandedDesc[item.id];
-                                        return (React.createElement("div", { key: item.id, style: { borderTop: "1px solid #181820", padding: "11px 16px" } },
+                                        return (React.createElement("div", { key: item.id, draggable: true, onDragStart: () => setDragItem({ groupId: group.id, itemId: item.id, index: idx }), onDragEnd: () => { setDragItem(null); setDragOver(null); }, onDragOver: e => { e.preventDefault(); setDragOver({ groupId: group.id, index: idx }); }, onDrop: () => { if (dragItem && dragItem.groupId === group.id)
+                                                reorderItem(group.id, dragItem.index, idx); setDragItem(null); setDragOver(null); }, style: { borderTop: "1px solid #181820", padding: "11px 16px", cursor: "grab", opacity: (dragItem === null || dragItem === void 0 ? void 0 : dragItem.itemId) === item.id ? 0.4 : 1, background: (dragOver === null || dragOver === void 0 ? void 0 : dragOver.groupId) === group.id && (dragOver === null || dragOver === void 0 ? void 0 : dragOver.index) === idx && (dragItem === null || dragItem === void 0 ? void 0 : dragItem.itemId) !== item.id ? "rgba(232,197,71,0.06)" : "transparent", borderLeft: (dragOver === null || dragOver === void 0 ? void 0 : dragOver.groupId) === group.id && (dragOver === null || dragOver === void 0 ? void 0 : dragOver.index) === idx && (dragItem === null || dragItem === void 0 ? void 0 : dragItem.itemId) !== item.id ? "2px solid #e8c547" : "2px solid transparent", transition: "background 0.15s, border-color 0.15s" } },
                                             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: editingItem === item.id ? 0 : 8 } },
-                                                React.createElement("div", { style: { width: 5, height: 5, borderRadius: "50%", background: group.pill, flexShrink: 0 } }),
+                                                React.createElement("div", { style: { color: "#333", fontSize: 14, cursor: "grab", flexShrink: 0, lineHeight: 1, userSelect: "none" } }, "\u283F"),
                                                 React.createElement("span", { style: { flex: 1, fontSize: 13, color: "#d0ccc7", fontWeight: 500 } }, item.name),
                                                 item.day && editingItem !== item.id && React.createElement("span", { style: { fontSize: 10, color: "#e8c547", background: "rgba(232,197,71,0.1)", border: "1px solid rgba(232,197,71,0.25)", borderRadius: 5, padding: "1px 6px", flexShrink: 0 } },
                                                     t("dayLabel"),
