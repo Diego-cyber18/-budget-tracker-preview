@@ -112,6 +112,8 @@
 
 
 
+
+
 function useIsMobile() {
     const [m, setM] = (0, React.useState)(typeof window !== 'undefined' ? window.innerWidth < 768 : true);
     (0, React.useEffect)(() => {
@@ -605,6 +607,8 @@ function App() {
     const [pelletLog, setPelletLog] = (0, React.useState)([]);
     const [pelletForm, setPelletForm] = (0, React.useState)({ date: today(), comprati: "", consumati: "" });
     const [editingPellet, setEditingPellet] = (0, React.useState)(null);
+    const [editingItem, setEditingItem] = (0, React.useState)(null); // id of item being edited (day/desc)
+    const [editItemDraft, setEditItemDraft] = (0, React.useState)({ day: "", desc: "" });
     const key = `${year}-${String(month + 1).padStart(2, "0")}`;
     (0, React.useEffect)(() => {
         async function load() {
@@ -848,6 +852,11 @@ function App() {
             });
         });
         return { comuneTotal, personaleTotal, rispTotal, grandTotal: comuneTotal + personaleTotal + rispTotal, dTotal, cTotal };
+    };
+    const updateItemMeta = (groupId, itemId, day, desc) => {
+        saveStructure(structure.map(g => g.id === groupId
+            ? Object.assign(Object.assign({}, g), { items: g.items.map(i => i.id === itemId ? Object.assign(Object.assign({}, i), { day: day ? parseInt(day) : undefined, desc }) : i) }) : g));
+        setEditingItem(null);
     };
     const addItem = (groupId) => {
         const name = prompt("Nome voce:");
@@ -1122,16 +1131,27 @@ function App() {
                                         const hasDesc = !!item.desc;
                                         const isDescOpen = expandedDesc[item.id];
                                         return (React.createElement("div", { key: item.id, style: { borderTop: "1px solid #181820", padding: "11px 16px" } },
-                                            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 8 } },
+                                            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: editingItem === item.id ? 0 : 8 } },
                                                 React.createElement("div", { style: { width: 5, height: 5, borderRadius: "50%", background: group.pill, flexShrink: 0 } }),
                                                 React.createElement("span", { style: { flex: 1, fontSize: 13, color: "#d0ccc7", fontWeight: 500 } }, item.name),
-                                                item.day && React.createElement("span", { style: { fontSize: 10, color: "#e8c547", background: "rgba(232,197,71,0.1)", border: "1px solid rgba(232,197,71,0.25)", borderRadius: 5, padding: "1px 6px", flexShrink: 0 } },
+                                                item.day && editingItem !== item.id && React.createElement("span", { style: { fontSize: 10, color: "#e8c547", background: "rgba(232,197,71,0.1)", border: "1px solid rgba(232,197,71,0.25)", borderRadius: 5, padding: "1px 6px", flexShrink: 0 } },
                                                     t("dayLabel"),
                                                     " ",
                                                     item.day),
-                                                hasDesc && React.createElement("button", { onClick: () => toggleDesc(item.id), style: { fontSize: 10, color: "#444", padding: "1px 6px", border: "1px solid #2a2a35", borderRadius: 4 } }, isDescOpen ? "▲" : "ℹ"),
+                                                !editingItem || editingItem !== item.id ? (React.createElement("button", { onClick: () => { setEditingItem(item.id); setEditItemDraft({ day: item.day || "", desc: item.desc || "" }); }, style: { fontSize: 10, color: "#444", padding: "1px 6px", border: "1px solid #2a2a35", borderRadius: 4 } }, "\u270F\uFE0F")) : null,
                                                 React.createElement("button", { onClick: () => removeItem(group.id, item.id), style: { color: "#2a2a35", fontSize: 16, padding: "0 2px" } }, "\u00D7")),
-                                            hasDesc && isDescOpen && (React.createElement("div", { style: { background: "#141418", borderRadius: 7, padding: "7px 10px", fontSize: 11, color: "#666", marginBottom: 8, lineHeight: 1.6 } }, item.desc)),
+                                            editingItem === item.id && (React.createElement("div", { style: { background: "#0f0f14", border: "1px solid #2a2a35", borderRadius: 8, padding: "10px 12px", marginBottom: 8, marginTop: 6 } },
+                                                React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 8 } },
+                                                    React.createElement("div", { style: { flex: "0 0 80px" } },
+                                                        React.createElement("div", { style: { fontSize: 9, color: "#e8c547", fontWeight: 700, letterSpacing: 0.8, marginBottom: 4 } }, "GIORNO"),
+                                                        React.createElement("input", { type: "number", placeholder: "\u2014", min: "1", max: "31", value: editItemDraft.day, onChange: e => setEditItemDraft(d => (Object.assign(Object.assign({}, d), { day: e.target.value }))), style: { padding: "6px 10px", fontSize: 13, textAlign: "center" } })),
+                                                    React.createElement("div", { style: { flex: 1 } },
+                                                        React.createElement("div", { style: { fontSize: 9, color: "#888", fontWeight: 700, letterSpacing: 0.8, marginBottom: 4 } }, "DESCRIZIONE"),
+                                                        React.createElement("input", { type: "text", placeholder: "Note opzionali...", value: editItemDraft.desc, onChange: e => setEditItemDraft(d => (Object.assign(Object.assign({}, d), { desc: e.target.value }))), style: { padding: "6px 10px", fontSize: 12 } }))),
+                                                React.createElement("div", { style: { display: "flex", gap: 6 } },
+                                                    React.createElement("button", { onClick: () => updateItemMeta(group.id, item.id, editItemDraft.day, editItemDraft.desc), style: { flex: 1, background: "#e8c547", color: "#0d0d0f", borderRadius: 6, padding: "6px", fontSize: 12, fontWeight: 700 } }, "\uD83D\uDCBE Salva"),
+                                                    React.createElement("button", { onClick: () => setEditingItem(null), style: { background: "#1f1f28", color: "#888", borderRadius: 6, padding: "6px 12px", fontSize: 12 } }, "\u2715")))),
+                                            !editingItem || editingItem !== item.id ? (hasDesc && isDescOpen && (React.createElement("div", { style: { background: "#141418", borderRadius: 7, padding: "7px 10px", fontSize: 11, color: "#666", marginBottom: 8, lineHeight: 1.6 } }, item.desc))) : null,
                                             !isManual ? (React.createElement("div", { style: { position: "relative", marginBottom: autoAmt > 0 ? 8 : 0 } },
                                                 React.createElement("span", { style: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#555", fontSize: 13 } }, "\u20AC"),
                                                 React.createElement("input", { type: "number", placeholder: "0,00", value: currentPlan[item.id] || "", onChange: e => updateAutoItem(item.id, e.target.value), style: { paddingLeft: 27, padding: "8px 12px 8px 27px" } }))) : (React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: rowTotal > 0 ? 8 : 0 } }, ["diego", "carmen"].map(p => (React.createElement("div", { key: p, style: { flex: 1 } },
