@@ -8,7 +8,7 @@
 <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js"></script>
 <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-<script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
+<script src="https://unpkg.com/recharts@2.5.0/umd/Recharts.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -2389,8 +2389,7 @@ function App() {
                       </div>
                       <div>
                         <div style={{ fontSize:10, color:"#666", marginBottom:4 }}>Categoria / Progetto</div>
-                        <input type="text" placeholder="es. Caldaia Pellet..." value={lavoriForm.categoria} onChange={e => setLavoriForm(f=>({...f, categoria:e.target.value}))} list="cat-suggestions" />
-                        <datalist id="cat-suggestions">{catList.map(c => <option key={c} value={c} />)}</datalist>
+                        <input type="text" placeholder="es. Caldaia Pellet..." value={lavoriForm.categoria} onChange={e => setLavoriForm(f=>({...f, categoria:e.target.value}))} />
                       </div>
                     </div>
 
